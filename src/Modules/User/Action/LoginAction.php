@@ -10,6 +10,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Yiisoft\Router\UrlGeneratorInterface;
 use Yiisoft\Yii\View\Renderer\WebViewRenderer;
 use Yiisoft\Session\SessionInterface;
+use Yiisoft\Db\Connection\ConnectionInterface;
 
 final class LoginAction
 {
@@ -18,6 +19,7 @@ final class LoginAction
         private UrlGeneratorInterface $urlGenerator,
         private ResponseFactoryInterface $responseFactory,
         private SessionInterface $session,
+        private ConnectionInterface $db,
     ) {
     }
 
@@ -41,15 +43,33 @@ final class LoginAction
                 );
         }
 
-        // Temporary authentication
-        if ($username === 'admin' && $password === 'admin') {
+
+        $user = $this->db
+            ->createCommand(
+                'SELECT * FROM account WHERE username = :username'
+            )
+            ->bindValue(':username', $username)
+            ->queryOne();
+
+        if ($user !== null && password_verify($password, $user['password'])) {
             $url = $this->urlGenerator->generate('home');
-            $this->session->set('user_id', '1');
+
+            $this->session->set('user_id', (string) $user['id']);
 
             return $this->responseFactory
                 ->createResponse(302)
                 ->withHeader('Location', $url);
         }
+
+        // Temporary authentication
+        // if ($username === 'admin' && $password === 'admin') {
+        //     $url = $this->urlGenerator->generate('home');
+        //     $this->session->set('user_id', '1');
+
+        //     return $this->responseFactory
+        //         ->createResponse(302)
+        //         ->withHeader('Location', $url);
+        // }
 
         // Authentication failed
         return $this->viewRenderer

@@ -23,6 +23,9 @@ return [
                 ->name('logout'),
             Route::get('/home')
                 ->action(Modules\User\Action\HomeAction::class)
-                ->name('home')
+                ->name('home'),
+            Route::get('/db-test')
+                ->action(Modules\User\Action\DbConnectionTest::class)
+                ->name('db-test')
         ),
 ];

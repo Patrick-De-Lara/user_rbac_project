@@ -9,6 +9,7 @@ use Psr\Http\Message\ResponseInterface;
 use Yiisoft\Session\SessionInterface;
 use Yiisoft\Router\UrlGeneratorInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
+use Yiisoft\Db\Connection\ConnectionInterface;
 
 
 final class HomeAction
@@ -18,6 +19,7 @@ final class HomeAction
         private UrlGeneratorInterface $urlGenerator,
         private SessionInterface $session,
         private ResponseFactoryInterface $responseFactory,
+        private ConnectionInterface $db,
     )
     {
     }
@@ -30,8 +32,18 @@ final class HomeAction
                 ->createResponse(302)
                 ->withHeader('Location', $url);
         }
+
+        $user = $this->db
+            ->createCommand('SELECT * FROM account WHERE id = :id')
+            ->bindValue(':id', $this->session->get('user_id'))
+            ->queryOne();
+
         return $this->viewRenderer
         ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')
-        ->render(__DIR__ . '/../View/homepage.php');
+        ->render(__DIR__ . '/../View/homepage.php',
+            [
+                'user' => $user,
+            ],
+        );
     }
 }

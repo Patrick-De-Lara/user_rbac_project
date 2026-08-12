@@ -9,6 +9,7 @@ use Yiisoft\Definitions\Reference;
 use Yiisoft\Router\CurrentRoute;
 use Yiisoft\Router\UrlGeneratorInterface;
 use Yiisoft\Yii\View\Renderer\CsrfViewInjection;
+use Yiisoft\Db\Mysql\Dsn;
 
 return [
     'application' => require __DIR__ . '/application.php',
@@ -26,6 +27,17 @@ return [
             'urlGenerator' => Reference::to(UrlGeneratorInterface::class),
             'currentRoute' => Reference::to(CurrentRoute::class),
         ],
+    ],
+    'yiisoft/db-mysql' => [
+        'dsn' => new Dsn(
+            'mysql',
+            '127.0.0.1',
+            'yiidb',
+            '3306',
+            ['charset' => 'utf8mb4']
+        ),
+        'username' => 'root',
+        'password' => '',
     ],
 
     'yiisoft/yii-view-renderer' => [
