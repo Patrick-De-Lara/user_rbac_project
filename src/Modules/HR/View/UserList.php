@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+use Yiisoft\Html\Html;
+
+?>
+
+<div class="overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-xl">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-700 text-left text-sm text-slate-200">
+                <thead class="bg-slate-950 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <tr>
+                    <th class="px-6 py-4">ID</th>
+                    <th class="px-6 py-4">Username</th>
+                    <th class="px-6 py-4">Created</th>
+                    <th class="px-6 py-4">Updated</th>
+                    <th class="px-6 py-4 text-right">Actions</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700">
+                <?php foreach ($users as $user): ?>
+                    <tr class="hover:bg-slate-800/70">
+                        <td class="px-6 py-4 font-medium text-white"><?= Html::encode((string) $user->['id']) ?></td>
+                        <td class="px-6 py-4"><?= Html::encode($user->['username']) ?></td>
+                        <td class="px-6 py-4"><?= Html::encode((string) ($user->['date_updated'] ?? '-')) ?></td>
+                        <td class="px-6 py-4"><?= Html::encode((string) ($user->['is_active'] ?? '-')) ?></td>
+                        <td class="px-6 py-4">
+                            <div class="flex justify-end gap-2">
+                            </div>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>

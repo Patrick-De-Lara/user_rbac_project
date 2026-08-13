@@ -27,8 +27,15 @@ final class CreateUserAction
     ) {
     }
 
+    // show creation user
     public function render(): ResponseInterface
     {
+        if(!$this->session->get('user_id')) {
+            $url = $this->urlGenerator->generate('login');
+            return $this->responseFactory
+                ->createResponse(302)
+                ->withHeader('Location', $url);
+        }
         return $this->viewRenderer
             ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')
             ->render(
@@ -36,6 +43,7 @@ final class CreateUserAction
             );
     }
 
+    //  create user method
     public function create(ServerRequestInterface $request): ResponseInterface
     {
         $data = $request->getParsedBody();
@@ -109,7 +117,6 @@ final class CreateUserAction
                 $formData->password,
                 PASSWORD_DEFAULT
             ),
-            'user_type' => 'employee',
             'person_id' => $personId,
             'date_updated' => date('Y-m-d H:i:s'),
             'is_active' => 1,
@@ -123,6 +130,31 @@ final class CreateUserAction
                     'success' => 'User created successfully',
                 ],
             );
+    }
+
+    // show the list of users
+    public function view(): ResponseInterface
+    {
+        if(!$this->session->get('user_id')) {
+            $url = $this->urlGenerator->generate('login');
+            return $this->responseFactory
+                ->createResponse(302)
+                ->withHeader('Location', $url);
+        }
+
+        $users = $this->db
+            ->createCommand('SELECT * FROM sys_user')
+            ->queryAll();
+
+        return $this->viewRenderer
+            ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')
+            ->render(
+                __DIR__ . '/../View/UserList.php',
+                [
+                    'users' => $users,
+                ],
+            );
+        
     }
 
 }

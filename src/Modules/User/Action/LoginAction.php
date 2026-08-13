@@ -30,6 +30,7 @@ final class LoginAction
 
         $username = $data['username'] ?? '';
         $password = $data['password'] ?? '';
+        
 
         // Check required fields
         if ($username === '' || $password === '') {
@@ -46,7 +47,7 @@ final class LoginAction
 
         $user = $this->db
             ->createCommand(
-                'SELECT * FROM account WHERE username = :username'
+                'SELECT * FROM sys_user WHERE username = :username'
             )
             ->bindValue(':username', $username)
             ->queryOne();
@@ -60,6 +61,20 @@ final class LoginAction
                 ->createResponse(302)
                 ->withHeader('Location', $url);
         }
+
+        //check if the account is active
+
+        if($user !== null && $user['is_active'] === 0) {
+            return $this->viewRenderer
+                ->withLayout('@src/Web/Shared/Layout/Auth/layout.php')
+                ->render(
+                    __DIR__ . '/../View/LoginPage.php',
+                    [
+                        'error' => 'Your account is inactive. Please contact the administrator.',
+                    ],
+                );
+        }
+
 
         // Temporary authentication
         // if ($username === 'admin' && $password === 'admin') {

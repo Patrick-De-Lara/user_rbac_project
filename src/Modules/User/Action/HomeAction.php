@@ -34,7 +34,7 @@ final class HomeAction
         }
 
         $user = $this->db
-            ->createCommand('SELECT * FROM account WHERE id = :id')
+            ->createCommand('SELECT * FROM sys_user WHERE id = :id')
             ->bindValue(':id', $this->session->get('user_id'))
             ->queryOne();
 

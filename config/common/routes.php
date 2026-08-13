@@ -33,6 +33,9 @@ return [
                 ->name('create-user'),
             Route::post('/create-user')
                 ->action([CreateUserAction::class, 'create'])
-                ->name('create-user.submit')
+                ->name('create-user.submit'),
+            Route::get('/user-list')
+                ->action([CreateUserAction::class, 'view'])
+                ->name('user-list'),
         ),
 ];
