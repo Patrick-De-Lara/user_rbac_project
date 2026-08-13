@@ -32,12 +32,12 @@ return [
         'dsn' => new Dsn(
             'mysql',
             '127.0.0.1',
-            'yiidb',
+            'user_db',
             '3306',
             ['charset' => 'utf8mb4']
         ),
         'username' => 'root',
-        'password' => '',
+        'password' => 'pass123',
     ],
 
     'yiisoft/yii-view-renderer' => [

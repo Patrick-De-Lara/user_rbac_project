@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Web;
 use Yiisoft\Router\Group;
 use Yiisoft\Router\Route;
+use Modules\HR\Action\CreateUserAction;
 
 return [
     Group::create()
@@ -26,6 +27,12 @@ return [
                 ->name('home'),
             Route::get('/db-test')
                 ->action(Modules\User\Action\DbConnectionTest::class)
-                ->name('db-test')
+                ->name('db-test'),
+            Route::get('/create-user')
+                ->action([CreateUserAction::class, 'render'])
+                ->name('create-user'),
+            Route::post('/create-user')
+                ->action([CreateUserAction::class, 'create'])
+                ->name('create-user.submit')
         ),
 ];
