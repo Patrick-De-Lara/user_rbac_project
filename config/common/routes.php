@@ -6,6 +6,7 @@ use App\Web;
 use Yiisoft\Router\Group;
 use Yiisoft\Router\Route;
 use Modules\HR\Action\CreateUserAction;
+use Modules\HR\Action\RoleAction;
 
 return [
     Group::create()
@@ -28,14 +29,28 @@ return [
             Route::get('/db-test')
                 ->action(Modules\User\Action\DbConnectionTest::class)
                 ->name('db-test'),
+
+            
+            //User Route
             Route::get('/create-user')
                 ->action([CreateUserAction::class, 'render'])
                 ->name('create-user'),
             Route::post('/create-user')
                 ->action([CreateUserAction::class, 'create'])
                 ->name('create-user.submit'),
+            Route::get('/update-user/{id:\d+}')
+                ->action([CreateUserAction::class, 'update'])
+                ->name('update-user'),
+            Route::post('/update-user/{id:\d+}')
+                ->action([CreateUserAction::class, 'updateSubmit'])
+                ->name('update-user.submit'),
             Route::get('/user-list')
                 ->action([CreateUserAction::class, 'view'])
                 ->name('user-list'),
+
+            //Role Route
+            Route::get('/role-list')
+                ->action([RoleAction::class, 'render'])
+                ->name('role-list'),    
         ),
 ];

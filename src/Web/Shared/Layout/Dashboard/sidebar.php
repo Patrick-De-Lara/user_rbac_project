@@ -40,7 +40,6 @@ $this->beginPage();
 
 <?php $this->beginBody(); ?>
 
-
 <!-- =============================================================
      APPLICATION LAYOUT
      ============================================================= -->
@@ -56,26 +55,20 @@ $this->beginPage();
 
     <div
         id="sidebar-overlay"
-
         class="
             fixed
             inset-0
             z-30
-
             bg-black/50
-
             opacity-0
             pointer-events-none
-
             transition-opacity
             duration-300
-
             lg:hidden
         "
 
         aria-hidden="true"
     ></div>
-
 
     <!-- =========================================================
          SIDEBAR
@@ -123,7 +116,6 @@ $this->beginPage();
         "
     >
 
-
         <!-- =====================================================
              APPLICATION TITLE
              ===================================================== -->
@@ -138,14 +130,12 @@ $this->beginPage();
                 px-6
             "
         >
-
             <a
                 href="/home"
                 class="text-xl font-bold"
             >
                 My Application
             </a>
-
 
             <!-- Mobile / tablet close button -->
 
@@ -172,7 +162,6 @@ $this->beginPage();
                     lg:hidden
                 "
             >
-
                 <svg
                     class="h-6 w-6"
                     fill="none"
@@ -180,7 +169,6 @@ $this->beginPage();
                     viewBox="0 0 24 24"
                     aria-hidden="true"
                 >
-
                     <path
                         stroke-linecap="round"
                         stroke-linejoin="round"
@@ -211,7 +199,7 @@ $this->beginPage();
             <!-- Dashboard -->
 
             <a
-                href="/"
+                href="/home"
                 class="
                     block
                     rounded-lg
@@ -229,11 +217,10 @@ $this->beginPage();
                 Dashboard
             </a>
 
-
             <!-- Users -->
 
             <a
-                href="/user"
+                href="/user-list"
                 class="
                     mt-1
                     block
@@ -252,8 +239,47 @@ $this->beginPage();
                 Users
             </a>
 
-        </nav>
+            <a 
+                href="/create-user"
+                class="
+                    mt-1
+                    block
+                    rounded-lg
+                    px-4
+                    py-3
 
+                    text-sm
+                    font-medium
+
+                    transition-colors
+
+                    hover:bg-gray-800
+                "
+                >
+                Create User
+            </a>
+
+            <a
+                href="/role-list"
+                class="
+                    mt-1
+                    block
+                    rounded-lg
+                    px-4
+                    py-3
+
+                    text-sm
+                    font-medium
+
+                    transition-colors
+
+                    hover:bg-gray-800
+                "
+                >
+                Roles
+            </a>
+
+        </nav>
 
         <!-- =====================================================
              LOGOUT
@@ -267,7 +293,6 @@ $this->beginPage();
                 pt-2
             "
         >
-
             <a
                 href="/logout"
 
@@ -292,9 +317,7 @@ $this->beginPage();
 
         </div>
 
-
     </aside>
-
 
     <!-- =========================================================
          MAIN CONTENT
@@ -307,7 +330,6 @@ $this->beginPage();
             flex-1
         "
     >
-
 
         <!-- =====================================================
              MOBILE / TABLET HEADER
@@ -356,7 +378,6 @@ $this->beginPage();
                     hover:bg-gray-800
                 "
             >
-
                 <svg
                     class="h-6 w-6"
                     fill="none"
@@ -364,7 +385,6 @@ $this->beginPage();
                     viewBox="0 0 24 24"
                     aria-hidden="true"
                 >
-
                     <path
                         stroke-linecap="round"
                         stroke-linejoin="round"
@@ -375,7 +395,6 @@ $this->beginPage();
                 </svg>
 
             </button>
-
 
             <span
                 class="
@@ -406,17 +425,12 @@ $this->beginPage();
                 lg:p-6
             "
         >
-
             <?= $content ?>
-
         </div>
-
 
     </main>
 
-
 </div>
-
 
 <!-- =============================================================
      SIDEBAR JAVASCRIPT
@@ -425,13 +439,9 @@ $this->beginPage();
 <script>
 
     const sidebar = document.getElementById('sidebar');
-
     const overlay = document.getElementById('sidebar-overlay');
-
     const openBtn = document.getElementById('open-sidebar');
-
     const closeBtn = document.getElementById('close-sidebar');
-
 
     /*
      * ============================================================
@@ -444,17 +454,11 @@ $this->beginPage();
         if (!sidebar || !overlay) {
             return;
         }
-
-
         // Slide sidebar into view.
-
         sidebar.classList.remove('-translate-x-full');
-
         sidebar.classList.add('translate-x-0');
 
-
         // Show overlay.
-
         overlay.classList.remove(
             'opacity-0',
             'pointer-events-none'
@@ -465,14 +469,10 @@ $this->beginPage();
             'pointer-events-auto'
         );
 
-
         // Prevent page from scrolling behind sidebar.
-
         document.body.classList.add('overflow-hidden');
 
-
         // Accessibility.
-
         openBtn?.setAttribute(
             'aria-expanded',
             'true'
@@ -482,9 +482,7 @@ $this->beginPage();
             'aria-hidden',
             'false'
         );
-
     }
-
 
     /*
      * ============================================================
@@ -498,13 +496,9 @@ $this->beginPage();
             return;
         }
 
-
         // Slide sidebar out.
-
         sidebar.classList.remove('translate-x-0');
-
         sidebar.classList.add('-translate-x-full');
-
 
         // Hide overlay.
 
@@ -520,12 +514,9 @@ $this->beginPage();
 
 
         // Restore page scrolling.
-
         document.body.classList.remove('overflow-hidden');
 
-
         // Accessibility.
-
         openBtn?.setAttribute(
             'aria-expanded',
             'false'
@@ -538,7 +529,6 @@ $this->beginPage();
 
     }
 
-
     /*
      * ============================================================
      * OPEN BUTTON
@@ -549,7 +539,6 @@ $this->beginPage();
         'click',
         openSidebar
     );
-
 
     /*
      * ============================================================
@@ -562,7 +551,6 @@ $this->beginPage();
         closeSidebar
     );
 
-
     /*
      * ============================================================
      * CLICK OVERLAY
@@ -573,7 +561,6 @@ $this->beginPage();
         'click',
         closeSidebar
     );
-
 
     /*
      * ============================================================
@@ -613,7 +600,6 @@ $this->beginPage();
 
         }
     );
-
 
     /*
      * ============================================================
@@ -664,12 +650,10 @@ $this->beginPage();
 
 </script>
 
-
 <?php $this->endBody(); ?>
 
 </body>
 
 </html>
-
 
 <?php $this->endPage(); ?>

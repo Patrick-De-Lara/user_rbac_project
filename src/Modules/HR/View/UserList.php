@@ -13,22 +13,43 @@ use Yiisoft\Html\Html;
                 <tr>
                     <th class="px-6 py-4">ID</th>
                     <th class="px-6 py-4">Username</th>
-                    <th class="px-6 py-4">Created</th>
-                    <th class="px-6 py-4">Updated</th>
+                    <th class="px-6 py-4">Date Updated</th>
+                    <th class="px-6 py-4">Is Active</th>
                     <th class="px-6 py-4 text-right">Actions</th>
                 </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-700">
                 <?php foreach ($users as $user): ?>
                     <tr class="hover:bg-slate-800/70">
-                        <td class="px-6 py-4 font-medium text-white"><?= Html::encode((string) $user->['id']) ?></td>
-                        <td class="px-6 py-4"><?= Html::encode($user->['username']) ?></td>
-                        <td class="px-6 py-4"><?= Html::encode((string) ($user->['date_updated'] ?? '-')) ?></td>
-                        <td class="px-6 py-4"><?= Html::encode((string) ($user->['is_active'] ?? '-')) ?></td>
+                        <td class="px-6 py-4 font-medium text-white">
+                            <?= Html::encode((string) ($user['id'])) ?>
+                        </td>
+                        <td class="px-6 py-4">
+                            <?= Html::encode((string) ($user['username'] ?? '-')) ?>
+                        </td>
+                        <td class="px-6 py-4">
+                            <?= Html::encode((string) ($user['date_updated'] ?? '-')) ?>
+                        </td>
+                        <td class="px-6 py-4">
+                            <?= Html::encode((string) ($user['is_active'] ?? '-')) ?>
+                        </td>
                         <td class="px-6 py-4">
                             <div class="flex justify-end gap-2">
+                                <a
+                                    href="/update-user/<?= Html::encode((string) $user['id']) ?>"
+                                    class="rounded-lg border border-slate-600 px-3 py-2 font-medium text-white bg-blue-500 transition hover:bg-blue-800"
+                                >
+                                    Edit
+                                </a>
+                                <a
+                                    href="/delete-user/<?= Html::encode((string) $user['id']) ?>"
+                                    class="rounded-lg border border-slate-500 px-3 py-2 font-medium text-white bg-amber-500 transition hover:bg-amber-700"
+                                >
+                                    Role
+                                </a>
                             </div>
                         </td>
+                        
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
