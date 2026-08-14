@@ -30,8 +30,9 @@ return [
                 ->action(Modules\User\Action\DbConnectionTest::class)
                 ->name('db-test'),
 
-            
-            //User Route
+            // -----------------------------------------------
+            // User Routes
+            // -----------------------------------------------
             Route::get('/create-user')
                 ->action([CreateUserAction::class, 'render'])
                 ->name('create-user'),
@@ -48,9 +49,44 @@ return [
                 ->action([CreateUserAction::class, 'view'])
                 ->name('user-list'),
 
-            //Role Route
+            // -----------------------------------------------
+            // Role Routes
+            // -----------------------------------------------
+
+            // Main role management page (list + user role assignment UI)
             Route::get('/role-list')
                 ->action([RoleAction::class, 'render'])
-                ->name('role-list'),    
+                ->name('role-list'),
+
+            // AJAX — fetch assigned roles for a selected user
+            Route::get('/role-list/user-roles')
+                ->action([RoleAction::class, 'getUserRoles'])
+                ->name('role-list.user-roles'),
+
+            // Save role assignments for a user (called by JS fetch)
+            Route::post('/role-list/save')
+                ->action([RoleAction::class, 'save'])
+                ->name('role-list.save'),
+
+            // Create new role
+            Route::get('/role-list/create')
+                ->action([RoleAction::class, 'create'])
+                ->name('role-list.create'),
+            Route::post('/role-list/create')
+                ->action([RoleAction::class, 'create'])
+                ->name('role-list.create.submit'),
+
+            // Edit existing role
+            Route::get('/role-list/edit')
+                ->action([RoleAction::class, 'edit'])
+                ->name('role-list.edit'),
+            Route::post('/role-list/edit')
+                ->action([RoleAction::class, 'edit'])
+                ->name('role-list.edit.submit'),
+
+            // Delete role
+            Route::post('/role-list/delete')
+                ->action([RoleAction::class, 'delete'])
+                ->name('role-list.delete'),
         ),
 ];

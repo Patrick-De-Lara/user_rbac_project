@@ -15,10 +15,12 @@ use Yiisoft\Validator\Validator;
 use Modules\HR\Model\SysUserDataValidation;
 use Yiisoft\Router\HydratorAttribute\RouteArgument;
 use Modules\HR\Service\SessionChecker;
+use Modules\HR\Trait\ActionHelper;
 
 final class CreateUserAction
 {
-    
+    use ActionHelper;
+
     public function __construct(
         private WebViewRenderer $viewRenderer,
         private UrlGeneratorInterface $urlGenerator,
@@ -26,268 +28,225 @@ final class CreateUserAction
         private SessionInterface $session,
         private ConnectionInterface $db,
         private Validator $validator,
-        private SessionChecker $sessionCheck
-    ) {
-    }
+        private SessionChecker $sessionCheck,
+    ) {}
 
-    // show creation user
+    // =========================================================
+    // SHOW CREATE FORM
+    // GET /create-user
+    // =========================================================
+
     public function render(): ResponseInterface
     {
-        if($this->sessionCheck->isUserLoggedIn() === false) {
+        if ($this->sessionCheck->isUserLoggedIn() === false) {
             return $this->sessionCheck->returnLogin();
         }
 
         return $this->viewRenderer
             ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')
-            ->render(
-                __DIR__ . '/../View/UserCreationForm.php',
-                [
-                    'isUpdate' => false,
-                ],
-            );
+            ->render(__DIR__ . '/../View/UserCreationForm.php', [
+                'isUpdate' => false,
+                'flash'    => $this->pullFlash(),
+            ]);
     }
 
-    //  create user method
+    // =========================================================
+    // HANDLE CREATE SUBMIT
+    // POST /create-user
+    // =========================================================
+
     public function create(ServerRequestInterface $request): ResponseInterface
     {
-        $data = $request->getParsedBody();
-
-        if($this->sessionCheck->isUserLoggedIn() === false) {
+        if ($this->sessionCheck->isUserLoggedIn() === false) {
             return $this->sessionCheck->returnLogin();
         }
 
-        if(!$data) {
+        $data = $this->body($request);
+
+        if ($data === []) {
             return $this->viewRenderer
                 ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')
-                ->render(
-                    __DIR__ . '/../View/UserCreationForm.php',
-                    [
-                        'error' => 'No data received',
-                    ],
-                );
+                ->render(__DIR__ . '/../View/UserCreationForm.php', [
+                    'isUpdate' => false,
+                    'flash'    => ['error' => 'No data received.'],
+                ]);
         }
 
         $formData = new SysUserDataValidation(
-            firstName: $data['firstname'] ?? null,
-            lastName: $data['lastname'] ?? null,
-            middleName: $data['middlename'] ?? null,
-            birthday: $data['birthday'] ?? null,
-            sex: $data['sex'] ?? null,
-            birthPlace: $data['birthplace'] ?? null,
-            username: $data['username'] ?? null,
-            password: $data['password'] ?? null,
+            firstName:       $data['firstname']       ?? null,
+            lastName:        $data['lastname']        ?? null,
+            middleName:      $data['middlename']      ?? null,
+            birthday:        $data['birthday']        ?? null,
+            sex:             $data['sex']             ?? null,
+            birthPlace:      $data['birthplace']      ?? null,
+            username:        $data['username']        ?? null,
+            password:        $data['password']        ?? null,
             passwordConfirm: $data['password_confirm'] ?? null,
         );
 
-        //validate the input data
         $result = $this->validator->validate($formData);
 
         if (!$result->isValid()) {
-            // Validation failed - re-render form with errors
             return $this->viewRenderer
                 ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')
-                ->render(
-                    __DIR__ . '/../View/UserCreationForm.php',
-                    [
-                        'errors' => $result->getErrors(),
-                        'formData' => $formData, // Re-populate form with submitted values
-                    ]
-                );
+                ->render(__DIR__ . '/../View/UserCreationForm.php', [
+                    'isUpdate' => false,
+                    'errors'   => $result->getErrors(),
+                    'formData' => $formData,
+                    'flash'    => $this->pullFlash(),
+                ]);
         }
 
-        if($formData->password !== $formData->passwordConfirm) {
+        if ($formData->password !== $formData->passwordConfirm) {
             return $this->viewRenderer
                 ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')
-                ->render(
-                    __DIR__ . '/../View/UserCreationForm.php',
-                    [
-                        'error' => 'Passwords do not match',
-                        'formData' => $formData, // Re-populate form with submitted values
-                    ]
-                );
+                ->render(__DIR__ . '/../View/UserCreationForm.php', [
+                    'isUpdate' => false,
+                    'formData' => $formData,
+                    'flash'    => ['error' => 'Passwords do not match.'],
+                ]);
         }
 
-        //create query
         $this->db->createCommand()->insert('er_person', [
-            'firstName' => $formData->firstName,
-            'lastName' => $formData->lastName,
+            'firstName'  => $formData->firstName,
+            'lastName'   => $formData->lastName,
             'middleName' => $formData->middleName,
-            'birthday' => $formData->birthday,
+            'birthday'   => $formData->birthday,
             'birthPlace' => $formData->birthPlace,
-            'sex' => $formData->sex,
+            'sex'        => $formData->sex,
         ])->execute();
 
         $personId = $this->db->getLastInsertID();
 
         $this->db->createCommand()->insert('sys_user', [
-            'username' => $formData->username,
-            'password' => password_hash(
-                $formData->password,
-                PASSWORD_DEFAULT
-            ),
-            'person_id' => $personId,
+            'username'     => $formData->username,
+            'password'     => password_hash($formData->password, PASSWORD_DEFAULT),
+            'person_id'    => $personId,
             'date_updated' => date('Y-m-d H:i:s'),
-            'is_active' => 1,
+            'is_active'    => 1,
         ])->execute();
 
-        return $this->viewRenderer
-            ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')
-            ->render(
-                __DIR__ . '/../View/UserCreationForm.php',
-                [
-                    'success' => 'User created successfully',
-                ],
-            );
+        $this->flash('success', 'User created successfully.');
+        return $this->redirect('/user-list');
     }
+
+    // =========================================================
+    // SHOW EDIT FORM
+    // GET /update-user/{id}
+    // =========================================================
 
     public function update(#[RouteArgument] string $id): ResponseInterface
     {
-        if($this->sessionCheck->isUserLoggedIn() === false) {
+        if ($this->sessionCheck->isUserLoggedIn() === false) {
             return $this->sessionCheck->returnLogin();
         }
 
-        // Fetch user data from the database
-        $user = $this->db
-            ->createCommand(
-                'SELECT
-                    u.id,
-                    u.username,
-                    p.firstName,
-                    p.lastName,
-                    p.middleName,
-                    p.birthday,
-                    p.sex,
-                    p.birthPlace
-                FROM sys_user u
-                INNER JOIN er_person p ON p.id = u.person_id
-                WHERE u.id = :id'
-            )
+        $user = $this->db->createCommand('
+            SELECT
+                u.id,
+                u.username,
+                p.firstName,
+                p.lastName,
+                p.middleName,
+                p.birthday,
+                p.sex,
+                p.birthPlace
+            FROM sys_user u
+            INNER JOIN er_person p ON p.id = u.person_id
+            WHERE u.id = :id
+        ')
             ->bindValue(':id', $id)
             ->queryOne();
 
-        //     var_dump($user); // Debugging line to check the fetched user data
-        // die;
-
         if (!$user) {
-            return $this->viewRenderer
-                ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')
-                ->render(
-                    __DIR__ . '/../View/UserCreationForm.php',
-                    [
-                        'error' => 'User not found',
-                    ],
-                );
+            $this->flash('error', 'User not found.');
+            return $this->redirect('/user-list');
         }
 
-
-        // Render the form with existing user data for editing
         return $this->viewRenderer
             ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')
-            ->render(
-                __DIR__ . '/../View/UserCreationForm.php',
-                [
-                    'formData' => $user,
-                    'userId' => $id,
-                    'isUpdate' => true, // Flag to indicate this is an update operation
-                ],
-            );
+            ->render(__DIR__ . '/../View/UserCreationForm.php', [
+                'formData' => $user,
+                'userId'   => $id,
+                'isUpdate' => true,
+                'flash'    => $this->pullFlash(),
+            ]);
     }
+
+    // =========================================================
+    // HANDLE EDIT SUBMIT
+    // POST /update-user/{id}
+    // =========================================================
 
     public function updateSubmit(ServerRequestInterface $request, #[RouteArgument] string $id): ResponseInterface
     {
-        $data = $request->getParsedBody();
-
-        if($this->sessionCheck->isUserLoggedIn() === false) {
+        if ($this->sessionCheck->isUserLoggedIn() === false) {
             return $this->sessionCheck->returnLogin();
         }
 
-        if(!$data) {
-            return $this->viewRenderer
-                ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')
-                ->render(
-                    __DIR__ . '/../View/UserCreationForm.php',
-                    [
-                        'error' => 'No data received',
-                    ],
-                );
+        $data = $this->body($request);
+
+        if ($data === []) {
+            $this->flash('error', 'No data received.');
+            return $this->redirect('/update-user/' . $id);
         }
 
-        // Fetch existing user data to get the person_id
-        $user = $this->db
-            ->createCommand('SELECT * FROM sys_user WHERE id = :id')
+        $user = $this->db->createCommand('SELECT * FROM sys_user WHERE id = :id')
             ->bindValue(':id', $id)
             ->queryOne();
 
-
-        $formData = [
-            'id' => (int) $id,
-            'firstName' => $data['firstname'] ?? '',
-            'lastName' => $data['lastname'] ?? '',
-            'middleName' => $data['middlename'] ?? '',
-            'birthday' => $data['birthday'] ?? '',
-            'birthPlace' => $data['birthplace'] ?? '',
-            'sex' => $data['sex'] ?? '',
-        ];   
-
         if (!$user) {
-            return $this->viewRenderer
-                ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')
-                ->render(
-                    __DIR__ . '/../View/UserCreationForm.php',
-                    [
-                        'error' => 'User not found',
-                    ],
-                );
+            $this->flash('error', 'User not found.');
+            return $this->redirect('/user-list');
         }
 
-        // Update person data
         $this->db->createCommand()->update('er_person', [
-            'firstName' => $data['firstname'] ?? null,
-            'lastName' => $data['lastname'] ?? null,
+            'firstName'  => $data['firstname']  ?? null,
+            'lastName'   => $data['lastname']   ?? null,
             'middleName' => $data['middlename'] ?? null,
-            'birthday' => $data['birthday'] ?? null,
+            'birthday'   => $data['birthday']   ?? null,
             'birthPlace' => $data['birthplace'] ?? null,
-            'sex' => $data['sex'] ?? null,
+            'sex'        => $data['sex']        ?? null,
         ], ['id' => $user['person_id']])->execute();
 
-        // Update user data
         $this->db->createCommand()->update('sys_user', [
             'date_updated' => date('Y-m-d H:i:s'),
         ], ['id' => $id])->execute();
 
-        return $this->viewRenderer
-            ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')
-            ->render(
-                __DIR__ . '/../View/UserCreationForm.php',
-                [
-                    'success' => 'User updated successfully',
-                    'formData' => $formData, // Re-populate form with submitted values
-                    'userId' => $id,
-                    'isUpdate' => true, // Flag to indicate this is an update operation
-                ],
-            );
+        $this->flash('success', 'User updated successfully.');
+        return $this->redirect('/update-user/' . $id);
     }
 
-    // show the list of users
+    // =========================================================
+    // USER LIST
+    // GET /user-list
+    // =========================================================
+
     public function view(): ResponseInterface
     {
-        if($this->sessionCheck->isUserLoggedIn() === false) {
+        if ($this->sessionCheck->isUserLoggedIn() === false) {
             return $this->sessionCheck->returnLogin();
         }
 
-        $users = $this->db
-            ->createCommand('SELECT * FROM sys_user')
-            ->queryAll();
+        $users = $this->db->createCommand('
+            SELECT
+                u.id,
+                u.username,
+                u.is_active,
+                u.date_updated,
+                p.firstName,
+                p.lastName,
+                p.middleName
+            FROM sys_user u
+            LEFT JOIN er_person p ON p.id = u.person_id
+            ORDER BY p.lastName ASC, p.firstName ASC
+        ')->queryAll();
 
         return $this->viewRenderer
             ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')
-            ->render(
-                __DIR__ . '/../View/UserList.php',
-                [
-                    'users' => $users,
-                ],
-            );
-        
+            ->render(__DIR__ . '/../View/UserList.php', [
+                'users' => $users,
+                'flash' => $this->pullFlash(),
+            ]);
     }
-
 }

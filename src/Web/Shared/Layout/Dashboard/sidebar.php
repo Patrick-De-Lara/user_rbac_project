@@ -35,7 +35,7 @@ $this->beginPage();
 </head>
 
 
-<body class="m-0 min-h-screen overflow-x-hidden bg-gray-100">
+<body class="m-0 overflow-x-hidden bg-gray-100">
 
 
 <?php $this->beginBody(); ?>
@@ -44,7 +44,7 @@ $this->beginPage();
      APPLICATION LAYOUT
      ============================================================= -->
 
-<div class="flex min-h-screen w-full">
+<div class="flex w-full">
 
 
     <!-- =========================================================
@@ -108,9 +108,6 @@ $this->beginPage();
             duration-300
             ease-in-out
 
-            lg:sticky
-            lg:top-0
-            lg:h-screen
             lg:translate-x-0
             lg:shadow-none
         "
@@ -328,6 +325,7 @@ $this->beginPage();
             min-h-screen
             min-w-0
             flex-1
+            lg:pl-64
         "
     >
 

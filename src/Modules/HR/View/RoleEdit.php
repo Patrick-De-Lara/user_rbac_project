@@ -4,544 +4,282 @@ declare(strict_types=1);
 
 use Yiisoft\Html\Html;
 
-/*
- * TEMPORARY FRONTEND DATA
+/**
+ * Variables passed from RoleAction::create() and RoleAction::edit()
  *
- * These will eventually come from the controller/database.
+ * @var string $title        'Create Role' or 'Edit Role'
+ * @var string $submitLabel  'Create Role' or 'Save Changes'
+ * @var string $actionUrl    '/role-list/create' or '/role-list/edit?id=X'
+ * @var array  $fields       ['code' => '', 'description' => '', 'is_active' => 1]
+ * @var array  $errors       ['code' => 'msg', 'description' => 'msg']
+ * @var array  $flash        ['success' => '...', 'error' => '...']
  */
-$user = $user ?? [
-    'firstName' => 'Patrick',
-    'middleName' => 'Martin',
-    'lastName' => 'De Lara',
-    'username' => 'patrick',
-];
 
-$availableRoles = [
-    ['id' => 1, 'name' => 'Administrator'],
-    ['id' => 2, 'name' => 'HR Manager'],
-    ['id' => 3, 'name' => 'Project Manager'],
-    ['id' => 4, 'name' => 'Employee'],
-    ['id' => 5, 'name' => 'Supervisor'],
-    ['id' => 6, 'name' => 'Finance'],
-];
+$fields = $fields ?? ['code' => '', 'description' => '', 'is_active' => 1];
+$errors = $errors ?? [];
+$flash  = $flash  ?? [];
 
-$assignedRoles = [
-    ['id' => 7, 'name' => 'User'],
-];
+// Detect mode — if actionUrl contains 'edit' we are updating
+$isEdit = isset($actionUrl) && str_contains($actionUrl, 'edit');
 ?>
 
 <div class="space-y-6">
 
     <!-- Page Header -->
-    <div>
-        <h1 class="text-2xl font-bold text-black">
-            Role Management
-        </h1>
+    <div class="flex items-center gap-4">
 
-        <p class="mt-1 text-sm text-slate-700">
-            Manage the roles assigned to this user.
-        </p>
-    </div>
+        <a
+            href="/role-list"
+            class="
+                flex h-9 w-9 items-center justify-center
+                rounded-lg border border-slate-300
+                text-slate-500
+                transition hover:border-slate-400 hover:text-slate-700
+            "
+            aria-label="Back to roles"
+        >
+            <!-- Back arrow icon -->
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </a>
 
-
-    <!-- Account Information -->
-    <div class="overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-xl">
-
-        <div class="border-b border-slate-700 px-6 py-5">
-            <h2 class="text-lg font-semibold text-white">
-                Account Information
-            </h2>
-
-            <p class="mt-1 text-sm text-slate-400">
-                Basic information about the account.
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">
+                <?= Html::encode($title ?? 'Role') ?>
+            </h1>
+            <p class="mt-0.5 text-sm text-slate-500">
+                <?= $isEdit ? 'Update the details of this role.' : 'Fill in the details to create a new role.' ?>
             </p>
         </div>
 
-        <div class="grid grid-cols-1 gap-5 p-6 md:grid-cols-2 lg:grid-cols-4">
-
-            <!-- First Name -->
-            <div>
-                <label class="mb-2 block text-sm font-medium text-slate-400">
-                    First Name
-                </label>
-
-                <div class="rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white">
-                    <?= Html::encode((string) ($user['firstName'] ?? '-')) ?>
-                </div>
-            </div>
-
-            <!-- Middle Name -->
-            <div>
-                <label class="mb-2 block text-sm font-medium text-slate-400">
-                    Middle Name
-                </label>
-
-                <div class="rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white">
-                    <?= Html::encode((string) ($user['middleName'] ?? '-')) ?>
-                </div>
-            </div>
-
-            <!-- Last Name -->
-            <div>
-                <label class="mb-2 block text-sm font-medium text-slate-400">
-                    Last Name
-                </label>
-
-                <div class="rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white">
-                    <?= Html::encode((string) ($user['lastName'] ?? '-')) ?>
-                </div>
-            </div>
-
-            <!-- Username -->
-            <div>
-                <label class="mb-2 block text-sm font-medium text-slate-400">
-                    Username
-                </label>
-
-                <div class="rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white">
-                    <?= Html::encode((string) ($user['username'] ?? '-')) ?>
-                </div>
-            </div>
-
-        </div>
     </div>
 
 
-    <!-- Role Management -->
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <!-- Flash Messages -->
+    <?php if (!empty($flash['success'])): ?>
+        <div class="rounded-lg border border-green-700 bg-green-900/30 px-4 py-3 text-sm text-green-300">
+            <?= Html::encode($flash['success']) ?>
+        </div>
+    <?php endif; ?>
 
-        <!-- Available Roles -->
-        <div class="overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-xl">
-
-            <div class="border-b border-slate-700 px-6 py-5">
-
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-lg font-semibold text-white">
-                            Available Roles
-                        </h2>
-
-                        <p class="mt-1 text-sm text-slate-400">
-                            Roles that can be assigned to this user.
-                        </p>
-                    </div>
-
-                    <span
-                        id="availableRoleCount"
-                        class="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-300"
-                    >
-                        <?= count($availableRoles) ?>
-                    </span>
-                </div>
-
-                <!-- Search -->
-                <div class="relative mt-4">
-                    <input
-                        id="availableRoleSearch"
-                        type="text"
-                        placeholder="Search available roles..."
-                        class="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
-                    >
-                </div>
-
-            </div>
+    <?php if (!empty($flash['error'])): ?>
+        <div class="rounded-lg border border-red-700 bg-red-900/30 px-4 py-3 text-sm text-red-300">
+            <?= Html::encode($flash['error']) ?>
+        </div>
+    <?php endif; ?>
 
 
-            <!-- Table -->
-            <div class="overflow-x-auto">
+    <!-- Form Card -->
+    <div class="overflow-hidden rounded-2xl border border-slate-300 shadow-lg">
 
-                <table class="min-w-full text-left text-sm">
-
-                    <thead class="bg-slate-950 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    <tr>
-                        <th class="px-6 py-4">
-                            Role
-                        </th>
-
-                        <th class="px-6 py-4 text-right">
-                            Action
-                        </th>
-                    </tr>
-                    </thead>
-
-                    <tbody
-                        id="availableRoles"
-                        class="divide-y divide-slate-700"
-                    >
-
-                    <?php foreach ($availableRoles as $role): ?>
-
-                        <tr
-                            class="role-row hover:bg-slate-800/70"
-                            data-role-id="<?= Html::encode((string) $role['id']) ?>"
-                            data-role-name="<?= Html::encode(strtolower((string) $role['name'])) ?>"
-                        >
-
-                            <td class="px-6 py-4 font-medium text-white">
-                                <?= Html::encode((string) $role['name']) ?>
-                            </td>
-
-                            <td class="px-6 py-4 text-right">
-
-                                <button
-                                    type="button"
-                                    class="add-role rounded-lg border border-emerald-700 bg-emerald-900/30 px-3 py-2 text-xs font-medium text-emerald-300 transition hover:bg-emerald-800/50"
-                                    data-role-id="<?= Html::encode((string) $role['id']) ?>"
-                                >
-                                    + Add
-                                </button>
-
-                            </td>
-
-                        </tr>
-
-                    <?php endforeach; ?>
-
-                    </tbody>
-
-                </table>
-
-                <div
-                    id="availableEmpty"
-                    class="hidden px-6 py-10 text-center text-sm text-slate-500"
-                >
-                    No available roles found.
-                </div>
-
-            </div>
+        <div class="border-b border-slate-300 px-6 py-5">
+            <h2 class="text-lg font-semibold text-black">
+                Role Details
+            </h2>
+            <p class="mt-1 text-sm text-slate-600">
+                <?= $isEdit ? 'Edit the role information below.' : 'Enter the role information below.' ?>
+            </p>
         </div>
 
-
-        <!-- Assigned Roles -->
-        <div class="overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-xl">
-
-            <div class="border-b border-slate-700 px-6 py-5">
-
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-lg font-semibold text-white">
-                            Assigned Roles
-                        </h2>
-
-                        <p class="mt-1 text-sm text-slate-400">
-                            Roles currently assigned to this user.
-                        </p>
-                    </div>
-
-                    <span
-                        id="assignedRoleCount"
-                        class="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-300"
-                    >
-                        <?= count($assignedRoles) ?>
-                    </span>
-                </div>
-
-                <!-- Search -->
-                <div class="relative mt-4">
-                    <input
-                        id="assignedRoleSearch"
-                        type="text"
-                        placeholder="Search assigned roles..."
-                        class="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
-                    >
-                </div>
-
-            </div>
-
-
-            <!-- Table -->
-            <div class="overflow-x-auto">
-
-                <table class="min-w-full text-left text-sm">
-
-                    <thead class="bg-slate-950 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    <tr>
-                        <th class="px-6 py-4">
-                            Role
-                        </th>
-
-                        <th class="px-6 py-4 text-right">
-                            Action
-                        </th>
-                    </tr>
-                    </thead>
-
-                    <tbody
-                        id="assignedRoles"
-                        class="divide-y divide-slate-700"
-                    >
-
-                    <?php foreach ($assignedRoles as $role): ?>
-
-                        <tr
-                            class="role-row hover:bg-slate-800/70"
-                            data-role-id="<?= Html::encode((string) $role['id']) ?>"
-                            data-role-name="<?= Html::encode(strtolower((string) $role['name'])) ?>"
-                        >
-
-                            <td class="px-6 py-4 font-medium text-white">
-                                <?= Html::encode((string) $role['name']) ?>
-                            </td>
-
-                            <td class="px-6 py-4 text-right">
-
-                                <button
-                                    type="button"
-                                    class="remove-role rounded-lg border border-red-700 bg-red-900/30 px-3 py-2 text-xs font-medium text-red-300 transition hover:bg-red-800/50"
-                                    data-role-id="<?= Html::encode((string) $role['id']) ?>"
-                                >
-                                    Remove
-                                </button>
-
-                            </td>
-
-                        </tr>
-
-                    <?php endforeach; ?>
-
-                    </tbody>
-
-                </table>
-
-                <div
-                    id="assignedEmpty"
-                    class="hidden px-6 py-10 text-center text-sm text-slate-500"
-                >
-                    No roles assigned.
-                </div>
-
-            </div>
-        </div>
-
-    </div>
-
-
-    <!-- Save Area -->
-    <div class="flex justify-end">
-        <button
-            type="button"
-            id="saveRoles"
-            class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500"
+        <form
+            method="POST"
+            action="<?= Html::encode($actionUrl ?? '') ?>"
+            novalidate
         >
-            Save Changes
-        </button>
+            <div class="space-y-6 p-6">
+
+                <!-- Code -->
+                <div>
+                    <label
+                        for="code"
+                        class="mb-2 block text-sm font-medium text-slate-700"
+                    >
+                        Role Code
+                        <span class="text-red-500">*</span>
+                    </label>
+
+                    <input
+                        id="code"
+                        name="code"
+                        type="text"
+                        maxlength="20"
+                        autocomplete="off"
+                        placeholder="e.g. Administrator, HR Manager"
+                        value="<?= Html::encode((string) ($fields['code'] ?? '')) ?>"
+                        class="
+                            w-full rounded-lg border px-4 py-3 text-sm outline-none transition
+                            <?= isset($errors['code'])
+                                ? 'border-red-600 bg-red-950/30 text-white placeholder-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500'
+                                : 'border-slate-700 bg-slate-950 text-white placeholder-slate-500 focus:border-slate-500 focus:ring-1 focus:ring-slate-500'
+                            ?>
+                        "
+                    >
+
+                    <?php if (isset($errors['code'])): ?>
+                        <p class="mt-1.5 text-xs text-red-400">
+                            <?= Html::encode($errors['code']) ?>
+                        </p>
+                    <?php else: ?>
+                        <p class="mt-1.5 text-xs text-slate-500">
+                            Short unique identifier. Max 20 characters.
+                        </p>
+                    <?php endif; ?>
+                </div>
+
+
+                <!-- Description -->
+                <div>
+                    <label
+                        for="description"
+                        class="mb-2 block text-sm font-medium text-slate-700"
+                    >
+                        Description
+                        <span class="text-red-500">*</span>
+                    </label>
+
+                    <textarea
+                        id="description"
+                        name="description"
+                        rows="3"
+                        maxlength="100"
+                        placeholder="Describe what this role allows users to do..."
+                        class="
+                            w-full resize-none rounded-lg border px-4 py-3 text-sm outline-none transition
+                            <?= isset($errors['description'])
+                                ? 'border-red-600 bg-red-950/30 text-white placeholder-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500'
+                                : 'border-slate-700 bg-slate-950 text-white placeholder-slate-500 focus:border-slate-500 focus:ring-1 focus:ring-slate-500'
+                            ?>
+                        "
+                    ><?= Html::encode((string) ($fields['description'] ?? '')) ?></textarea>
+
+                    <?php if (isset($errors['description'])): ?>
+                        <p class="mt-1.5 text-xs text-red-400">
+                            <?= Html::encode($errors['description']) ?>
+                        </p>
+                    <?php else: ?>
+                        <p class="mt-1.5 text-xs text-slate-500">
+                            Max 100 characters.
+                        </p>
+                    <?php endif; ?>
+                </div>
+
+
+                <!-- Is Active -->
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700">
+                        Status
+                    </label>
+
+                    <label class="inline-flex cursor-pointer items-center gap-3">
+
+                        <input
+                            type="checkbox"
+                            name="is_active"
+                            value="1"
+                            <?= ((int) ($fields['is_active'] ?? 1)) === 1 ? 'checked' : '' ?>
+                            class="h-4 w-4 rounded border-slate-600 bg-slate-900 text-blue-600 focus:ring-blue-500"
+                        >
+
+                        <span class="text-sm text-slate-700">
+                            Active — this role can be assigned to users
+                        </span>
+
+                    </label>
+                </div>
+
+            </div>
+
+
+            <!-- Form Actions -->
+            <div class="
+                flex items-center justify-between
+                border-t border-slate-200
+                bg-slate-50
+                px-6 py-4
+            ">
+
+                <a
+                    href="/role-list"
+                    class="
+                        rounded-lg border border-slate-300
+                        px-5 py-2.5
+                        text-sm font-medium text-slate-600
+                        transition hover:border-slate-400 hover:text-slate-800
+                    "
+                >
+                    Cancel
+                </a>
+
+                <button
+                    type="submit"
+                    class="
+                        rounded-lg
+                        <?= $isEdit ? 'bg-blue-600 hover:bg-blue-500' : 'bg-green-600 hover:bg-green-500' ?>
+                        px-6 py-2.5
+                        text-sm font-medium text-white
+                        shadow-sm transition
+                    "
+                >
+                    <?= Html::encode($submitLabel ?? 'Submit') ?>
+                </button>
+
+            </div>
+
+        </form>
+
     </div>
+
+
+    <?php if ($isEdit): ?>
+    <!-- Danger Zone — only shown on edit -->
+    <div class="overflow-hidden rounded-2xl border border-red-300 shadow-lg">
+
+        <div class="border-b border-red-300 bg-red-50 px-6 py-5">
+            <h2 class="text-lg font-semibold text-red-700">Danger Zone</h2>
+            <p class="mt-1 text-sm text-red-500">
+                Destructive actions. These cannot be undone.
+            </p>
+        </div>
+
+        <div class="flex items-center justify-between p-6">
+            <div>
+                <p class="text-sm font-medium text-slate-800">Delete this role</p>
+                <p class="mt-0.5 text-sm text-slate-500">
+                    Permanently removes the role. Blocked if any users are still assigned to it.
+                </p>
+            </div>
+
+            <form
+                method="POST"
+                action="/role-list/delete"
+                onsubmit="return confirm('Delete this role? This cannot be undone.')"
+            >
+                <?php
+                    // Extract id from actionUrl: '/role-list/edit?id=5' → 5
+                    $roleIdForDelete = 0;
+                    if (isset($actionUrl) && preg_match('/id=(\d+)/', $actionUrl, $m)) {
+                        $roleIdForDelete = (int) $m[1];
+                    }
+                ?>
+                <input type="hidden" name="id" value="<?= $roleIdForDelete ?>">
+
+                <button
+                    type="submit"
+                    class="
+                        rounded-lg border border-red-600
+                        bg-red-600
+                        px-5 py-2.5
+                        text-sm font-medium text-white
+                        transition hover:bg-red-700
+                    "
+                >
+                    Delete Role
+                </button>
+            </form>
+
+        </div>
+    </div>
+    <?php endif; ?>
 
 </div>
-
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-
-        const availableRoles = document.getElementById('availableRoles');
-        const assignedRoles = document.getElementById('assignedRoles');
-
-        const availableSearch = document.getElementById('availableRoleSearch');
-        const assignedSearch = document.getElementById('assignedRoleSearch');
-
-        const availableCount = document.getElementById('availableRoleCount');
-        const assignedCount = document.getElementById('assignedRoleCount');
-
-        const availableEmpty = document.getElementById('availableEmpty');
-        const assignedEmpty = document.getElementById('assignedEmpty');
-
-
-        /*
-         * Move a role from Available → Assigned
-         */
-        function addRole(button) {
-
-            const row = button.closest('.role-row');
-
-            if (!row) {
-                return;
-            }
-
-            const removeButton = document.createElement('button');
-
-            removeButton.type = 'button';
-            removeButton.className =
-                'remove-role rounded-lg border border-red-700 bg-red-900/30 px-3 py-2 text-xs font-medium text-red-300 transition hover:bg-red-800/50';
-
-            removeButton.textContent = 'Remove';
-
-            removeButton.dataset.roleId = row.dataset.roleId;
-
-            const actionCell = row.querySelector('td:last-child');
-
-            actionCell.innerHTML = '';
-            actionCell.appendChild(removeButton);
-
-            assignedRoles.appendChild(row);
-
-            updateCounts();
-            updateEmptyStates();
-        }
-
-
-        /*
-         * Move a role from Assigned → Available
-         */
-        function removeRole(button) {
-
-            const row = button.closest('.role-row');
-
-            if (!row) {
-                return;
-            }
-
-            const addButton = document.createElement('button');
-
-            addButton.type = 'button';
-            addButton.className =
-                'add-role rounded-lg border border-emerald-700 bg-emerald-900/30 px-3 py-2 text-xs font-medium text-emerald-300 transition hover:bg-emerald-800/50';
-
-            addButton.textContent = '+ Add';
-
-            addButton.dataset.roleId = row.dataset.roleId;
-
-            const actionCell = row.querySelector('td:last-child');
-
-            actionCell.innerHTML = '';
-            actionCell.appendChild(addButton);
-
-            availableRoles.appendChild(row);
-
-            updateCounts();
-            updateEmptyStates();
-        }
-
-
-        /*
-         * Search roles
-         */
-        function filterRoles(container, searchInput) {
-
-            const searchTerm = searchInput.value
-                .trim()
-                .toLowerCase();
-
-            const rows = container.querySelectorAll('.role-row');
-
-            let visibleRows = 0;
-
-            rows.forEach(function (row) {
-
-                const roleName = row.dataset.roleName || '';
-
-                const matches = roleName.includes(searchTerm);
-
-                row.style.display = matches ? '' : 'none';
-
-                if (matches) {
-                    visibleRows++;
-                }
-            });
-
-            return visibleRows;
-        }
-
-
-        /*
-         * Update role counters
-         */
-        function updateCounts() {
-
-            availableCount.textContent =
-                availableRoles.querySelectorAll('.role-row').length;
-
-            assignedCount.textContent =
-                assignedRoles.querySelectorAll('.role-row').length;
-
-            filterRoles(availableRoles, availableSearch);
-            filterRoles(assignedRoles, assignedSearch);
-        }
-
-
-        /*
-         * Show "no roles" messages
-         */
-        function updateEmptyStates() {
-
-            const availableRows =
-                availableRoles.querySelectorAll('.role-row').length;
-
-            const assignedRows =
-                assignedRoles.querySelectorAll('.role-row').length;
-
-            availableEmpty.classList.toggle(
-                'hidden',
-                availableRows > 0
-            );
-
-            assignedEmpty.classList.toggle(
-                'hidden',
-                assignedRows > 0
-            );
-        }
-
-
-        /*
-         * Event delegation for Add / Remove buttons
-         */
-        document.addEventListener('click', function (event) {
-
-            const addButton =
-                event.target.closest('.add-role');
-
-            const removeButton =
-                event.target.closest('.remove-role');
-
-
-            if (addButton) {
-                addRole(addButton);
-                return;
-            }
-
-
-            if (removeButton) {
-                removeRole(removeButton);
-            }
-        });
-
-
-        /*
-         * Search events
-         */
-        availableSearch.addEventListener('input', function () {
-            filterRoles(availableRoles, availableSearch);
-        });
-
-
-        assignedSearch.addEventListener('input', function () {
-            filterRoles(assignedRoles, assignedSearch);
-        });
-
-
-        /*
-         * Temporary save button.
-         *
-         * Backend will be connected later.
-         */
-        document.getElementById('saveRoles')
-            .addEventListener('click', function () {
-
-                const assigned =
-                    [...assignedRoles.querySelectorAll('.role-row')]
-                        .map(row => ({
-                            id: row.dataset.roleId,
-                            name: row.querySelector('td').textContent.trim()
-                        }));
-
-                console.log('Roles that would be saved:', assigned);
-
-                alert(
-                    'Frontend is working. Backend saving will be connected next.'
-                );
-            });
-
-
-        updateCounts();
-        updateEmptyStates();
-    });
-</script>
