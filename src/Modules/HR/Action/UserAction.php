@@ -15,9 +15,10 @@ use Yiisoft\Validator\Validator;
 use Modules\HR\Model\SysUserDataValidation;
 use Yiisoft\Router\HydratorAttribute\RouteArgument;
 use Modules\Service\SessionChecker;
+use Modules\Service\ActionChecker;
 use Modules\HR\Trait\ActionHelper;
 
-final class CreateUserAction
+final class UserAction
 {
     use ActionHelper;
 
@@ -29,6 +30,7 @@ final class CreateUserAction
         private ConnectionInterface $db,
         private Validator $validator,
         private SessionChecker $sessionCheck,
+        private ActionChecker $actionChecker,
     ) {}
 
     // =========================================================
@@ -213,9 +215,16 @@ final class CreateUserAction
             'sex'        => $data['sex']        ?? null,
         ], ['id' => $user['person_id']])->execute();
 
-        $this->db->createCommand()->update('sys_user', [
+        $userUpdate = [
             'date_updated' => date('Y-m-d H:i:s'),
-        ], ['id' => $id])->execute();
+            'username'     => $data['username'],
+        ];
+
+        if (!empty($data['password'])) {
+            $userUpdate['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        }
+
+        $this->db->createCommand()->update('sys_user', $userUpdate, ['id' => $id])->execute();
 
         $this->flash('success', 'User updated successfully.');
         return $this->redirect('/update-user/' . $id);
@@ -232,7 +241,10 @@ final class CreateUserAction
             return $this->sessionCheck->returnLogin();
         }
 
-        $users = $this->db->createCommand('
+        $id = $this->session->get('user_id');
+        $viewItself = $this->actionChecker->UserModuleChecker('user', $id);
+
+        $baseQuery = '
             SELECT
                 u.id,
                 u.username,
@@ -243,8 +255,18 @@ final class CreateUserAction
                 p.middleName
             FROM sys_user u
             LEFT JOIN er_person p ON p.id = u.person_id
-            ORDER BY p.lastName ASC, p.firstName ASC
-        ')->queryAll();
+        ';
+
+        $canOnlyViewSelf = !empty($viewItself) && !in_array('all_view_employee_user',array_column($viewItself, 'action_code'));
+
+        if ($canOnlyViewSelf) {
+            $users = $this->db->createCommand($baseQuery . 'WHERE u.id = :id')
+                ->bindValue(':id', $id)
+                ->queryAll();
+        } else {
+            $users = $this->db->createCommand($baseQuery . 'ORDER BY p.lastName ASC, p.firstName ASC')
+                ->queryAll();
+        }
 
         return $this->viewRenderer
             ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')

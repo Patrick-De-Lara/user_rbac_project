@@ -5,7 +5,7 @@ declare(strict_types=1);
 use App\Web;
 use Yiisoft\Router\Group;
 use Yiisoft\Router\Route;
-use Modules\HR\Action\CreateUserAction;
+use Modules\HR\Action\UserAction;
 use Modules\HR\Action\RoleAction;
 
 return [
@@ -34,19 +34,19 @@ return [
             // User Routes
             // -----------------------------------------------
             Route::get('/create-user')
-                ->action([CreateUserAction::class, 'render'])
+                ->action([UserAction::class, 'render'])
                 ->name('create-user'),
             Route::post('/create-user')
-                ->action([CreateUserAction::class, 'create'])
+                ->action([UserAction::class, 'create'])
                 ->name('create-user.submit'),
             Route::get('/update-user/{id:\d+}')
-                ->action([CreateUserAction::class, 'update'])
+                ->action([UserAction::class, 'update'])
                 ->name('update-user'),
             Route::post('/update-user/{id:\d+}')
-                ->action([CreateUserAction::class, 'updateSubmit'])
+                ->action([UserAction::class, 'updateSubmit'])
                 ->name('update-user.submit'),
             Route::get('/user-list')
-                ->action([CreateUserAction::class, 'view'])
+                ->action([UserAction::class, 'view'])
                 ->name('user-list'),
 
             // -----------------------------------------------

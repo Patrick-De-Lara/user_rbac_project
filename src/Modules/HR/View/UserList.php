@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 use Yiisoft\Html\Html;
+use Modules\Service\ActionChecker;
+
+$userId = $getUserId->getUserIdFromSession() ?? 0;
+$userActions = array_column($actionChecker->UserModuleChecker('user', $userId),'action_code');
+$roleActions = array_column($actionChecker->UserModuleChecker('role', $userId),'action_code');
 
 ?>
 
@@ -15,7 +20,9 @@ use Yiisoft\Html\Html;
                     <th class="px-6 py-4">Username</th>
                     <th class="px-6 py-4">Date Updated</th>
                     <th class="px-6 py-4">Is Active</th>
+                    <?php if (in_array('update_employee_user', $userActions, true)): ?>
                     <th class="px-6 py-4 text-right">Actions</th>
+                    <?php endif; ?>
                 </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-700">
@@ -33,12 +40,13 @@ use Yiisoft\Html\Html;
                         <td class="px-6 py-4">
                             <?= Html::encode((string) ($user['is_active'] ?? '-')) ?>
                         </td>
-                        <td class="px-6 py-4">
-                            <div class="flex justify-end gap-2">
-                                <a
-                                    href="/update-user/<?= Html::encode((string) $user['id']) ?>"
-                                    class="rounded-lg border border-slate-600 px-3 py-2 font-medium text-white bg-blue-500 transition hover:bg-blue-800"
-                                >
+                        <?php if (in_array('update_employee_user', $userActions, true)): ?>
+                            <td class="px-6 py-4">
+                                <div class="flex justify-end gap-2">
+                                    <a
+                                        href="/update-user/<?= Html::encode((string) $user['id']) ?>"
+                                        class="rounded-lg border border-slate-600 px-3 py-2 font-medium text-white bg-blue-500 transition hover:bg-blue-800"
+                                    >
                                     Edit
                                 </a>
                                 <a
@@ -49,7 +57,7 @@ use Yiisoft\Html\Html;
                                 </a>
                             </div>
                         </td>
-                        
+                        <?php endif; ?>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

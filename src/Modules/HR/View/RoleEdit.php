@@ -123,6 +123,8 @@ $assignedActionIds = array_map('intval', array_column($roleActions, 'action_id')
 
         <form method="POST" action="<?= Html::encode($actionUrl ?? '') ?>" novalidate>
 
+        <?= $csrf->hiddenInput() ?>
+
             <div class="space-y-6 p-6">
 
                 <!-- Code -->

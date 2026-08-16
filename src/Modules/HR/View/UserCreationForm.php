@@ -217,7 +217,7 @@ $formAction = $isUpdate
          ACCOUNT INFORMATION
          ========================================================= -->
 
-    <?php if(!$isUpdate): ?>
+    
     <fieldset
         class="bg-white rounded-lg shadow-sm p-4"
     >
@@ -256,7 +256,7 @@ $formAction = $isUpdate
                     type="password"
                     id="password"
                     name="password"
-                    required
+                    
                     class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
             </div>
@@ -274,7 +274,7 @@ $formAction = $isUpdate
                     type="password"
                     id="password_confirm"
                     name="password_confirm"
-                    required
+                    
                     class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
 
@@ -283,7 +283,7 @@ $formAction = $isUpdate
         </div>
 
     </fieldset>
-    <?php endif; ?>
+    
 
     <!-- =========================================================
          SUBMIT
