@@ -88,5 +88,10 @@ return [
             Route::post('/role-list/delete')
                 ->action([RoleAction::class, 'delete'])
                 ->name('role-list.delete'),
+
+            // Save action/permission assignments for a role (called by JS fetch)
+            Route::post('/role-list/save-actions')
+                ->action([RoleAction::class, 'saveActions'])
+                ->name('role-list.save-actions'),
         ),
 ];

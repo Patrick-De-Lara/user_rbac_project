@@ -10,6 +10,7 @@ use Yiisoft\Router\CurrentRoute;
 use Yiisoft\Router\UrlGeneratorInterface;
 use Yiisoft\Yii\View\Renderer\CsrfViewInjection;
 use Yiisoft\Db\Mysql\Dsn;
+use App\Web\View\SidebarViewInjection;
 
 return [
     'application' => require __DIR__ . '/application.php',
@@ -45,6 +46,7 @@ return [
         'layout' => '@src/Web/Shared/Layout/Main/layout.php',
         'injections' => [
             Reference::to(CsrfViewInjection::class),
+            Reference::to(SidebarViewInjection::class),
         ],
     ],
 ];

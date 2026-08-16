@@ -11,7 +11,7 @@ use Yiisoft\Router\UrlGeneratorInterface;
 use Yiisoft\Yii\View\Renderer\WebViewRenderer;
 use Yiisoft\Session\SessionInterface;
 use Yiisoft\Db\Connection\ConnectionInterface;
-use Modules\HR\Service\SessionChecker;
+use Modules\Service\SessionChecker;
 
 final class RoleAction
 {
@@ -115,7 +115,37 @@ final class RoleAction
             return $this->sessionCheck->returnLogin();
         }
 
-        $body   = (array) $request->getParsedBody();
+        $body = $request->getParsedBody();
+
+        // The role-assignment UI sends JSON with fetch. Decode it when no
+        // global request-body parser has populated the PSR-7 parsed body.
+        if (!is_array($body)) {
+            $body = [];
+        }
+
+        if (
+            $body === []
+            && str_starts_with(strtolower($request->getHeaderLine('Content-Type')), 'application/json')
+        ) {
+            try {
+                $decoded = json_decode((string) $request->getBody(), true, 512, JSON_THROW_ON_ERROR);
+            } catch (\JsonException) {
+                return $this->jsonResponse([
+                    'success' => false,
+                    'message' => 'Invalid JSON request body.',
+                ], 400);
+            }
+
+            if (!is_array($decoded)) {
+                return $this->jsonResponse([
+                    'success' => false,
+                    'message' => 'JSON request body must be an object.',
+                ], 400);
+            }
+
+            $body = $decoded;
+        }
+
         $userId = (int) ($body['user_id'] ?? 0);
 
         if ($userId === 0) {
@@ -312,6 +342,8 @@ final class RoleAction
                 'fields'      => $fields,
                 'errors'      => $errors,
                 'flash'       => $this->pullFlash(),
+                'allActions'  => $this->db->createCommand('SELECT id, code, description FROM sys_user_action WHERE is_active = 1 ORDER BY code ASC')->queryAll(),
+                'roleActions' => $this->db->createCommand('SELECT action_id FROM sys_user_role_has_action WHERE role_id = :rid')->bindValue(':rid', $id)->queryAll(),
             ]);
     }
 
@@ -353,6 +385,101 @@ final class RoleAction
 
         $this->setFlash('success', 'Role deleted successfully.');
         return $this->redirect('/role-list');
+    }
+
+    // =========================================================
+    // ROLE ACTION PERMISSIONS — SAVE
+    // POST /role-list/save-actions
+    // Body JSON: { role_id: int, action_ids: int[] }
+    // Replaces all action assignments for this role in a transaction.
+    // =========================================================
+
+    public function saveActions(ServerRequestInterface $request): ResponseInterface
+    {
+        if ($this->sessionCheck->isUserLoggedIn() === false) {
+            return $this->jsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        $body = $request->getParsedBody();
+
+        // The permissions UI sends an application/json fetch request. This
+        // application does not have a global JSON body parser, so decode it
+        // here when the PSR-7 request has no parsed form body.
+        if (!is_array($body)) {
+            $body = [];
+        }
+
+        if (
+            $body === []
+            && str_starts_with(strtolower($request->getHeaderLine('Content-Type')), 'application/json')
+        ) {
+            try {
+                $decoded = json_decode((string) $request->getBody(), true, 512, JSON_THROW_ON_ERROR);
+            } catch (\JsonException) {
+                return $this->jsonResponse([
+                    'success' => false,
+                    'message' => 'Invalid JSON request body.',
+                ], 400);
+            }
+
+            if (!is_array($decoded)) {
+                return $this->jsonResponse([
+                    'success' => false,
+                    'message' => 'JSON request body must be an object.',
+                ], 400);
+            }
+
+            $body = $decoded;
+        }
+
+        $roleId = (int) ($body['role_id'] ?? 0);
+
+        if ($roleId == 0) {
+            return $this->jsonResponse(['success' => false, 'message' => 'Invalid role.'], 400);
+        }
+
+        $actionIds  = array_map('intval', (array) ($body['action_ids'] ?? []));
+        $authorId   = (int) $this->session->get('user_id');
+        $now        = date('Y-m-d H:i:s');
+        $transaction = $this->db->beginTransaction();
+
+        try {
+            // Remove all current action assignments for this role
+            $this->db->createCommand('
+                DELETE FROM sys_user_role_has_action WHERE role_id = :role_id
+            ')
+                ->bindValue(':role_id', $roleId)
+                ->execute();
+
+            // Insert the new set
+            foreach ($actionIds as $actionId) {
+                $this->db->createCommand('
+                    INSERT INTO sys_user_role_has_action (role_id, action_id, author_id, date_updated)
+                    VALUES (:role_id, :action_id, :author_id, :date_updated)
+                ')
+                    ->bindValues([
+                        ':role_id'      => $roleId,
+                        ':action_id'    => $actionId,
+                        ':author_id'    => $authorId,
+                        ':date_updated' => $now,
+                    ])
+                    ->execute();
+            }
+
+            $transaction->commit();
+            $this->setFlash('success', 'Permissions saved successfully.');
+
+            return $this->jsonResponse([
+                'success' => true,
+                'message' => 'Permissions saved successfully.',
+                'count'   => count($actionIds),
+                'redirect' => '/role-list/edit?id=' . $roleId,
+            ]);
+
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            return $this->jsonResponse(['success' => false, 'message' => 'Failed to save permissions.'], 500);
+        }
     }
 
     // =========================================================

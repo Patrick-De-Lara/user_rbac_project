@@ -2,8 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Modules\HR\Service;
-
+namespace Modules\Service;
 
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -24,7 +23,7 @@ final class GetUserId
         $this->session = $session;
         $this->db = $db;
         $this->responseFactory = $responseFactory;
-        $id = $this->session->get('user_id');
+
     }
 
 
@@ -35,5 +34,11 @@ final class GetUserId
             ->queryOne();
 
         return $user['id'] ?? null;
+    }
+
+    public function getUserIdFromSession(): ?string
+    {
+        $userId = $this->session->get('user_id');
+        return $userId;
     }
 }

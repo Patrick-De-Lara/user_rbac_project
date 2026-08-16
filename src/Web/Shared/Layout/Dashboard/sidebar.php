@@ -3,10 +3,16 @@
 declare(strict_types=1);
 
 use App\Web\Shared\Layout\Main\MainAsset;
+use Modules\Service\ActionChecker;
+use Modules\Service\GetUserId;
+
+
 
 /** @var \Yiisoft\Assets\AssetManager $assetManager */
 /** @var \Yiisoft\View\WebView $this */
 /** @var string $content */
+/** @var ActionChecker $actionChecker */
+
 
 $assetManager->register(MainAsset::class);
 
@@ -14,6 +20,10 @@ $this->addCssFiles($assetManager->getCssFiles());
 $this->addCssStrings($assetManager->getCssStrings());
 
 $this->beginPage();
+
+$userId = $getUserId->getUserIdFromSession() ?? 0;
+$userActions = array_column($actionChecker->UserModuleChecker('user', $userId),'action_code');
+$roleActions = array_column($actionChecker->UserModuleChecker('role', $userId),'action_code');
 
 ?>
 
@@ -216,26 +226,29 @@ $this->beginPage();
 
             <!-- Users -->
 
-            <a
-                href="/user-list"
-                class="
-                    mt-1
-                    block
-                    rounded-lg
-                    px-4
-                    py-3
+            <?php if (in_array('view_employee_user', $userActions, true)): ?>
+                <a
+                    href="/user-list"
+                    class="
+                        mt-1
+                        block
+                        rounded-lg
+                        px-4
+                        py-3
 
-                    text-sm
-                    font-medium
+                        text-sm
+                        font-medium
 
-                    transition-colors
+                        transition-colors
 
-                    hover:bg-gray-800
-                "
-            >
-                Users
-            </a>
+                        hover:bg-gray-800
+                    "
+                >
+                    Users
+                </a>
+            <?php endif; ?>
 
+            <?php if (in_array('create_employee_user', $userActions, true)): ?>
             <a 
                 href="/create-user"
                 class="
@@ -255,7 +268,9 @@ $this->beginPage();
                 >
                 Create User
             </a>
+            <?php endif; ?>
 
+            <?php if (in_array('view_role', $roleActions, true)): ?>
             <a
                 href="/role-list"
                 class="
@@ -275,6 +290,7 @@ $this->beginPage();
                 >
                 Roles
             </a>
+            <?php endif; ?>
 
         </nav>
 

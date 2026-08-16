@@ -32,10 +32,12 @@ final class HomeAction
                 ->createResponse(302)
                 ->withHeader('Location', $url);
         }
-
+        
+        $sessionId = $this->session->get('user_id');
+        
         $user = $this->db
             ->createCommand('SELECT * FROM sys_user WHERE id = :id')
-            ->bindValue(':id', $this->session->get('user_id'))
+            ->bindValue(':id', $sessionId)
             ->queryOne();
 
         return $this->viewRenderer
@@ -43,6 +45,7 @@ final class HomeAction
         ->render(__DIR__ . '/../View/homepage.php',
             [
                 'user' => $user,
+                'userId' => $sessionId,
             ],
         );
     }

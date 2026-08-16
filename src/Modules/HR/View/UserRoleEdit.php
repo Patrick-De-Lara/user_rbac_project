@@ -483,7 +483,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         fetch('/role-list/save', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': <?= json_encode($csrf->getToken()) ?>,
+            },
             body: JSON.stringify({ user_id: selectedUserId, role_ids: roleIds }),
         })
             .then(r => r.json())

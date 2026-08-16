@@ -14,7 +14,7 @@ use Yiisoft\Db\Connection\ConnectionInterface;
 use Yiisoft\Validator\Validator;
 use Modules\HR\Model\SysUserDataValidation;
 use Yiisoft\Router\HydratorAttribute\RouteArgument;
-use Modules\HR\Service\SessionChecker;
+use Modules\Service\SessionChecker;
 use Modules\HR\Trait\ActionHelper;
 
 final class CreateUserAction
@@ -126,8 +126,12 @@ final class CreateUserAction
             'is_active'    => 1,
         ])->execute();
 
-        $this->flash('success', 'User created successfully.');
-        return $this->redirect('/user-list');
+        return $this->viewRenderer
+            ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')
+            ->render(__DIR__ . '/../View/UserCreationForm.php', [
+                'isUpdate' => false,
+                'flash'    => ['success' => 'User created successfully.'],
+            ]);
     }
 
     // =========================================================

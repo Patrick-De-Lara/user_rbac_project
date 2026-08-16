@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Modules\HR\Service;
+namespace Modules\Service;
 
 use Yiisoft\Session\SessionInterface;
 use Yiisoft\Router\UrlGeneratorInterface;
