@@ -7,4 +7,8 @@ use Psr\Container\ContainerInterface;
 /**
  * @psalm-var list<callable(ContainerInterface): void>
  */
-return [];
+return [
+    Static function(){
+        date_default_timezone_set('Asia/Manila');
+    }
+];

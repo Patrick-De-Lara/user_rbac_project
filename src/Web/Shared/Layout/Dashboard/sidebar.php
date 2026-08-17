@@ -25,6 +25,8 @@ $userId = $getUserId->getUserIdFromSession() ?? 0;
 $userActions = array_column($actionChecker->UserModuleChecker('user', $userId),'action_code');
 $roleActions = array_column($actionChecker->UserModuleChecker('role', $userId),'action_code');
 
+//implement array_flip and isset if the module/action is now big data
+
 ?>
 
 <!DOCTYPE html>

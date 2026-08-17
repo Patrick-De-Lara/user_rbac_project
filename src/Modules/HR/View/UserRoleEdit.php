@@ -14,6 +14,11 @@ use Yiisoft\Html\Html;
 $allRoles = $allRoles ?? [];
 $allUsers = $allUsers ?? [];
 $flash    = $flash    ?? [];
+
+$userId = $getUserId->getUserIdFromSession() ?? 0;
+$roleActions = array_column($actionChecker->UserModuleChecker('role', $userId),'action_code');
+$roleActions = array_flip($roleActions);
+
 ?>
 
 <div class="space-y-6">
@@ -24,13 +29,14 @@ $flash    = $flash    ?? [];
             <h1 class="text-2xl font-bold text-slate-800">Role Management</h1>
             <p class="mt-1 text-sm text-slate-500">Assign and manage roles for users.</p>
         </div>
-
+        <?php if (isset($roleActions['create_role'])): ?>
         <a
             href="/role-list/create"
             class="rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-green-500"
         >
             + New Role
         </a>
+        <?php endif; ?>
     </div>
 
     <!-- Flash Messages -->
