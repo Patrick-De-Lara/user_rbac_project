@@ -95,8 +95,9 @@ final class RoleAction
             ->bindValue(':user_id', $userId)
             ->queryAll();
 
+
         return $this->jsonResponse([
-            'assignedRoleIds' => array_column($assignedRoles, 'id'),
+            'assignedRoleIds' => array_map('intval', array_column($assignedRoles, 'id')),
             'assignedRoles'   => $assignedRoles,
         ]);
     }

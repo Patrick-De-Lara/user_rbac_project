@@ -313,47 +313,90 @@ $flash    = $flash    ?? [];
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    // -----------------------------------------------------------
-    // All roles from PHP — embedded as JS array
-    // Shape: [{ id: 1, code: 'User', description: '...' }, ...]
-    // -----------------------------------------------------------
+    // =============================================================
+    // 1. DATA — embedded from PHP
+    // =============================================================
     const ALL_ROLES = <?= json_encode(array_values($allRoles), JSON_UNESCAPED_UNICODE) ?>;
-
-    // All users from PHP — for populating account info panel
     const ALL_USERS = <?= json_encode(array_values($allUsers), JSON_UNESCAPED_UNICODE) ?>;
 
-    // -----------------------------------------------------------
-    // DOM references
-    // -----------------------------------------------------------
-    const userSearchInput   = document.getElementById('userSearch');
-    const chooseBtn         = document.getElementById('chooseUser');
-    const accountInfo       = document.getElementById('accountInfo');
-    const rolePanel         = document.getElementById('rolePanel');
-    const saveArea          = document.getElementById('saveArea');
-    const availableRolesTbody = document.getElementById('availableRoles');
-    const assignedRolesTbody  = document.getElementById('assignedRoles');
-    const availableCount    = document.getElementById('availableRoleCount');
-    const assignedCount     = document.getElementById('assignedRoleCount');
-    const availableSearch   = document.getElementById('availableRoleSearch');
-    const assignedSearch    = document.getElementById('assignedRoleSearch');
-    const availableEmpty    = document.getElementById('availableEmpty');
-    const assignedEmpty     = document.getElementById('assignedEmpty');
+    // =============================================================
+    // 2. DOM REFERENCES
+    // =============================================================
+    const dom = {
+        userSearchInput:    document.getElementById('userSearch'),
+        chooseBtn:          document.getElementById('chooseUser'),
+        accountInfo:        document.getElementById('accountInfo'),
+        rolePanel:          document.getElementById('rolePanel'),
+        saveArea:           document.getElementById('saveArea'),
+        saveBtn:            document.getElementById('saveRoles'),
+        availableRolesTbody: document.getElementById('availableRoles'),
+        assignedRolesTbody:  document.getElementById('assignedRoles'),
+        availableCount:     document.getElementById('availableRoleCount'),
+        assignedCount:      document.getElementById('assignedRoleCount'),
+        availableSearch:    document.getElementById('availableRoleSearch'),
+        assignedSearch:     document.getElementById('assignedRoleSearch'),
+        availableEmpty:     document.getElementById('availableEmpty'),
+        assignedEmpty:      document.getElementById('assignedEmpty'),
+    };
 
+    // =============================================================
+    // 3. STATE
+    // =============================================================
     let selectedUserId = null;
 
-    // -----------------------------------------------------------
-    // Choose User button — fetch assigned roles from backend
-    // -----------------------------------------------------------
-    chooseBtn.addEventListener('click', function () {
-        const username = userSearchInput.value.trim();
+    // =============================================================
+    // 4. HELPERS
+    // =============================================================
+
+    /**
+     * Normalize any id (string or number) to an int for safe comparison.
+     * DB drivers often return numeric columns as strings (e.g. "2"),
+     * while embedded JS data may already be numbers — always compare
+     * using the same type to avoid silent === mismatches.
+     */
+    function toId(value) {
+        return parseInt(value, 10);
+    }
+
+    // =============================================================
+    // 5. USER SELECTION
+    // =============================================================
+
+    function findUserByUsername(username) {
+        return ALL_USERS.find(u => u.username === username);
+    }
+
+    function populateAccountInfo(user) {
+        document.getElementById('infoFirstName').textContent  = user.firstName  || '—';
+        document.getElementById('infoMiddleName').textContent = user.middleName || '—';
+        document.getElementById('infoLastName').textContent   = user.lastName   || '—';
+        document.getElementById('infoUsername').textContent   = user.username   || '—';
+        dom.accountInfo.classList.remove('hidden');
+    }
+
+    function loadRolesForUser(userId) {
+        fetch('/role-list/user-roles?user_id=' + userId)
+            .then(r => r.json())
+            .then(data => {
+                const assignedIds = (data.assignedRoleIds || []).map(toId);
+                buildRolePanels(assignedIds);
+                dom.rolePanel.classList.remove('hidden');
+                dom.saveArea.classList.remove('hidden');
+            })
+            .catch(() => {
+                alert('Failed to load roles. Please try again.');
+            });
+    }
+
+    dom.chooseBtn.addEventListener('click', function () {
+        const username = dom.userSearchInput.value.trim();
 
         if (username === '') {
             alert('Please select a user first.');
             return;
         }
 
-        // Find matching user from embedded PHP data
-        const user = ALL_USERS.find(u => u.username === username);
+        const user = findUserByUsername(username);
 
         if (!user) {
             alert('User not found. Please select from the list.');
@@ -361,44 +404,23 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         selectedUserId = user.id;
-
-        // Populate account info panel
-        document.getElementById('infoFirstName').textContent  = user.firstName  || '—';
-        document.getElementById('infoMiddleName').textContent = user.middleName || '—';
-        document.getElementById('infoLastName').textContent   = user.lastName   || '—';
-        document.getElementById('infoUsername').textContent   = user.username   || '—';
-        accountInfo.classList.remove('hidden');
-
-        // Fetch assigned roles from backend via AJAX
-        fetch('/role-list/user-roles?user_id=' + user.id)
-            .then(r => r.json())
-            .then(data => {
-                const assignedIds = data.assignedRoleIds || [];
-                buildRolePanels(assignedIds);
-                rolePanel.classList.remove('hidden');
-                saveArea.classList.remove('hidden');
-            })
-            .catch(() => {
-                alert('Failed to load roles. Please try again.');
-            });
+        populateAccountInfo(user);
+        loadRolesForUser(user.id);
     });
 
-    // -----------------------------------------------------------
-    // Build Available / Assigned panels from ALL_ROLES + assignedIds
-    // -----------------------------------------------------------
+    // =============================================================
+    // 6. ROLE PANELS — build / render
+    // =============================================================
+
     function buildRolePanels(assignedIds) {
-        availableRolesTbody.innerHTML = '';
-        assignedRolesTbody.innerHTML  = '';
+        dom.availableRolesTbody.innerHTML = '';
+        dom.assignedRolesTbody.innerHTML  = '';
 
         ALL_ROLES.forEach(function (role) {
-            const isAssigned = assignedIds.includes(Number(role.id));
+            const isAssigned = assignedIds.includes(toId(role.id));
             const row = buildRoleRow(role, isAssigned);
 
-            if (isAssigned) {
-                assignedRolesTbody.appendChild(row);
-            } else {
-                availableRolesTbody.appendChild(row);
-            }
+            (isAssigned ? dom.assignedRolesTbody : dom.availableRolesTbody).appendChild(row);
         });
 
         updateCounts();
@@ -439,9 +461,10 @@ document.addEventListener('DOMContentLoaded', function () {
         return tr;
     }
 
-    // -----------------------------------------------------------
-    // Add role (Available → Assigned)
-    // -----------------------------------------------------------
+    // =============================================================
+    // 7. ADD / REMOVE ROLE (move rows between panels)
+    // =============================================================
+
     function addRole(button) {
         const row = button.closest('.role-row');
         if (!row) return;
@@ -449,14 +472,11 @@ document.addEventListener('DOMContentLoaded', function () {
         button.className = 'remove-role rounded-lg border border-red-700 bg-red-900/30 px-3 py-2 text-xs font-medium text-red-300 transition hover:bg-red-800/50';
         button.textContent = 'Remove';
 
-        assignedRolesTbody.appendChild(row);
+        dom.assignedRolesTbody.appendChild(row);
         updateCounts();
         updateEmptyStates();
     }
 
-    // -----------------------------------------------------------
-    // Remove role (Assigned → Available)
-    // -----------------------------------------------------------
     function removeRole(button) {
         const row = button.closest('.role-row');
         if (!row) return;
@@ -464,22 +484,32 @@ document.addEventListener('DOMContentLoaded', function () {
         button.className = 'add-role rounded-lg border border-emerald-700 bg-emerald-900/30 px-3 py-2 text-xs font-medium text-emerald-300 transition hover:bg-emerald-800/50';
         button.textContent = '+ Add';
 
-        availableRolesTbody.appendChild(row);
+        dom.availableRolesTbody.appendChild(row);
         updateCounts();
         updateEmptyStates();
     }
 
-    // -----------------------------------------------------------
-    // Save Changes — POST to backend via fetch
-    // -----------------------------------------------------------
-    document.getElementById('saveRoles').addEventListener('click', function () {
+    // Event delegation for Add / Remove buttons
+    document.addEventListener('click', function (event) {
+        const addButton    = event.target.closest('.add-role');
+        const removeButton = event.target.closest('.remove-role');
+
+        if (addButton)    { addRole(addButton);       return; }
+        if (removeButton) { removeRole(removeButton); return; }
+    });
+
+    // =============================================================
+    // 8. SAVE — POST assigned role ids to backend
+    // =============================================================
+
+    function saveRoleAssignments() {
         if (!selectedUserId) {
             alert('No user selected.');
             return;
         }
 
-        const assignedRows = assignedRolesTbody.querySelectorAll('.role-row');
-        const roleIds = [...assignedRows].map(row => Number(row.dataset.roleId));
+        const assignedRows = dom.assignedRolesTbody.querySelectorAll('.role-row');
+        const roleIds = [...assignedRows].map(row => toId(row.dataset.roleId));
 
         fetch('/role-list/save', {
             method: 'POST',
@@ -491,31 +521,19 @@ document.addEventListener('DOMContentLoaded', function () {
         })
             .then(r => r.json())
             .then(data => {
-                if (data.success) {
-                    alert(data.message || 'Roles saved successfully.');
-                } else {
-                    alert(data.message || 'Failed to save roles.');
-                }
+                alert(data.message || (data.success ? 'Roles saved successfully.' : 'Failed to save roles.'));
             })
             .catch(() => {
                 alert('Network error. Please try again.');
             });
-    });
+    }
 
-    // -----------------------------------------------------------
-    // Event delegation for Add / Remove buttons
-    // -----------------------------------------------------------
-    document.addEventListener('click', function (event) {
-        const addButton    = event.target.closest('.add-role');
-        const removeButton = event.target.closest('.remove-role');
+    dom.saveBtn.addEventListener('click', saveRoleAssignments);
 
-        if (addButton)    { addRole(addButton);       return; }
-        if (removeButton) { removeRole(removeButton); return; }
-    });
+    // =============================================================
+    // 9. SEARCH / FILTER
+    // =============================================================
 
-    // -----------------------------------------------------------
-    // Search filtering
-    // -----------------------------------------------------------
     function filterRoles(tbody, searchInput) {
         const term = searchInput.value.trim().toLowerCase();
         tbody.querySelectorAll('.role-row').forEach(function (row) {
@@ -524,20 +542,21 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    availableSearch.addEventListener('input', () => filterRoles(availableRolesTbody, availableSearch));
-    assignedSearch.addEventListener('input',  () => filterRoles(assignedRolesTbody,  assignedSearch));
+    dom.availableSearch.addEventListener('input', () => filterRoles(dom.availableRolesTbody, dom.availableSearch));
+    dom.assignedSearch.addEventListener('input',  () => filterRoles(dom.assignedRolesTbody,  dom.assignedSearch));
 
-    // -----------------------------------------------------------
-    // Update counters + empty state messages
-    // -----------------------------------------------------------
+    // =============================================================
+    // 10. COUNTS / EMPTY STATES
+    // =============================================================
+
     function updateCounts() {
-        availableCount.textContent = availableRolesTbody.querySelectorAll('.role-row').length;
-        assignedCount.textContent  = assignedRolesTbody.querySelectorAll('.role-row').length;
+        dom.availableCount.textContent = dom.availableRolesTbody.querySelectorAll('.role-row').length;
+        dom.assignedCount.textContent  = dom.assignedRolesTbody.querySelectorAll('.role-row').length;
     }
 
     function updateEmptyStates() {
-        availableEmpty.classList.toggle('hidden', availableRolesTbody.querySelectorAll('.role-row').length > 0);
-        assignedEmpty.classList.toggle('hidden',  assignedRolesTbody.querySelectorAll('.role-row').length > 0);
+        dom.availableEmpty.classList.toggle('hidden', dom.availableRolesTbody.querySelectorAll('.role-row').length > 0);
+        dom.assignedEmpty.classList.toggle('hidden',  dom.assignedRolesTbody.querySelectorAll('.role-row').length > 0);
     }
 });
 </script>
