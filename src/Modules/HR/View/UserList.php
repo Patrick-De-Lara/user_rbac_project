@@ -11,6 +11,8 @@ $roleActions = array_column($actionChecker->UserModuleChecker('role', $userId),'
 
 ?>
 
+<?php require __DIR__ . '/../../../Web/Shared/View/flashToast.php'; ?>
+
 <div class="overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-xl">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-700 text-left text-sm text-slate-200">

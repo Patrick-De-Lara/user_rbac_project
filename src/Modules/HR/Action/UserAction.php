@@ -128,12 +128,8 @@ final class UserAction
             'is_active'    => 1,
         ])->execute();
 
-        return $this->viewRenderer
-            ->withLayout('@src/Web/Shared/Layout/Dashboard/sidebar.php')
-            ->render(__DIR__ . '/../View/UserCreationForm.php', [
-                'isUpdate' => false,
-                'flash'    => ['success' => 'User created successfully.'],
-            ]);
+        $this->flash('success', 'User created successfully.');
+        return $this->redirect('/user-list');
     }
 
     // =========================================================

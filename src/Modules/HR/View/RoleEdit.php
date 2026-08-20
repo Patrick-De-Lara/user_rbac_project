@@ -35,11 +35,13 @@ if ($isEdit) {
     $roleId = isset($params['id']) ? (int) $params['id'] : 0;
 }
 
-// var_dump($roleId);
-// exit;
-
 // Build a set of assigned action IDs for fast lookup
 $assignedActionIds = array_map('intval', array_column($roleActions, 'action_id'));
+
+$userId = $getUserId->getUserIdFromSession() ?? 0;
+$roleActions = array_column($actionChecker->UserModuleChecker('role', $userId),'action_code');
+$roleActions = array_flip($roleActions);
+
 ?>
 
 <div class="space-y-6">
@@ -81,37 +83,13 @@ $assignedActionIds = array_map('intval', array_column($roleActions, 'action_id')
     <!-- =========================================================
          FLASH MESSAGES
          ========================================================= -->
-    <?php if (!empty($flash['success'])): ?>
-        <div
-            id="successFlash"
-            role="status"
-            class="fixed bottom-5 right-5 z-50 flex max-w-sm items-center gap-3 rounded-lg border border-green-700 bg-green-900 px-4 py-3 text-sm text-green-100 shadow-xl transition duration-300"
-        >
-            <span class="text-lg" aria-hidden="true">✓</span>
-            <span><?= Html::encode($flash['success']) ?></span>
-        </div>
-
-        <script>
-        window.setTimeout(function () {
-            const successFlash = document.getElementById('successFlash');
-            if (!successFlash) return;
-
-            successFlash.classList.add('translate-y-2', 'opacity-0');
-            window.setTimeout(() => successFlash.remove(), 300);
-        }, 5000);
-        </script>
-    <?php endif; ?>
-
-    <?php if (!empty($flash['error'])): ?>
-        <div class="rounded-lg border border-red-700 bg-red-900/30 px-4 py-3 text-sm text-red-300">
-            <?= Html::encode($flash['error']) ?>
-        </div>
-    <?php endif; ?>
+    <?php require __DIR__ . '/../../../Web/Shared/View/flashToast.php'; ?>
 
 
     <!-- =========================================================
          ROLE DETAILS FORM
          ========================================================= -->
+    <?php if (isset($roleActions['update_role'])): ?>
     <div class="overflow-hidden rounded-2xl border border-slate-300 shadow-lg">
 
         <div class="border-b border-slate-300 px-6 py-5">
@@ -221,9 +199,8 @@ $assignedActionIds = array_map('intval', array_column($roleActions, 'action_id')
 
         </form>
     </div>
+    <?php endif; ?>
 
-
-    <?php if ($isEdit): ?>
 
     <!-- =========================================================
          ACTION / PERMISSION ASSIGNMENT
@@ -231,6 +208,8 @@ $assignedActionIds = array_map('intval', array_column($roleActions, 'action_id')
          Left:  sys_user_action  (available actions)
          Right: sys_user_role_has_action (actions assigned to this role)
          ========================================================= -->
+
+    <?php if (isset($roleActions['view_action_role']) && $isEdit): ?>
     <div class="overflow-hidden rounded-2xl border border-slate-300 shadow-lg">
 
         <div class="border-b border-slate-300 px-6 py-5">
@@ -274,10 +253,12 @@ $assignedActionIds = array_map('intval', array_column($roleActions, 'action_id')
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-left text-sm">
                         <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            <?php if(isset($roleActions['update_role_action'])): ?>
                             <tr>
                                 <th class="px-5 py-3">Action</th>
                                 <th class="px-5 py-3 text-right">Add</th>
                             </tr>
+                            <?php endif; ?>
                         </thead>
                         <tbody id="availableActions" class="divide-y divide-slate-100 bg-white">
 
@@ -298,6 +279,7 @@ $assignedActionIds = array_map('intval', array_column($roleActions, 'action_id')
                                             <?= Html::encode((string) $action['description']) ?>
                                         </p>
                                     </td>
+                                    <?php if(isset($roleActions['update_role_action'])): ?>
                                     <td class="px-5 py-3 text-right">
                                         <button
                                             type="button"
@@ -306,6 +288,7 @@ $assignedActionIds = array_map('intval', array_column($roleActions, 'action_id')
                                             + Add
                                         </button>
                                     </td>
+                                    <?php endif; ?>
                                 </tr>
                             <?php endforeach; ?>
 
@@ -314,6 +297,24 @@ $assignedActionIds = array_map('intval', array_column($roleActions, 'action_id')
 
                     <div id="availableActionsEmpty" class="hidden px-6 py-8 text-center text-sm text-slate-400">
                         No available actions. All actions are assigned.
+                    </div>
+
+                    <div class="flex items-center justify-between border-t border-slate-100 px-5 py-3">
+                        <button
+                            type="button"
+                            id="availableActionsPrev"
+                            class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                            ← Prev
+                        </button>
+                        <span id="availableActionsPageInfo" class="text-xs text-slate-500">Page 1 of 1</span>
+                        <button
+                            type="button"
+                            id="availableActionsNext"
+                            class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                            Next →
+                        </button>
                     </div>
                 </div>
             </div>
@@ -348,10 +349,12 @@ $assignedActionIds = array_map('intval', array_column($roleActions, 'action_id')
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-left text-sm">
                         <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            <?php if(isset($roleActions['update_role_action'])): ?>
                             <tr>
                                 <th class="px-5 py-3">Action</th>
                                 <th class="px-5 py-3 text-right">Remove</th>
                             </tr>
+                            <?php endif; ?>
                         </thead>
                         <tbody id="assignedActions" class="divide-y divide-slate-100 bg-white">
 
@@ -372,6 +375,7 @@ $assignedActionIds = array_map('intval', array_column($roleActions, 'action_id')
                                             <?= Html::encode((string) $action['description']) ?>
                                         </p>
                                     </td>
+                                    <?php if(isset($roleActions['update_role_action'])): ?>
                                     <td class="px-5 py-3 text-right">
                                         <button
                                             type="button"
@@ -380,6 +384,7 @@ $assignedActionIds = array_map('intval', array_column($roleActions, 'action_id')
                                             Remove
                                         </button>
                                     </td>
+                                    <?php endif; ?>
                                 </tr>
                             <?php endforeach; ?>
 
@@ -389,11 +394,30 @@ $assignedActionIds = array_map('intval', array_column($roleActions, 'action_id')
                     <div id="assignedActionsEmpty" class="hidden px-6 py-8 text-center text-sm text-slate-400">
                         No actions assigned to this role.
                     </div>
+
+                    <div class="flex items-center justify-between border-t border-slate-100 px-5 py-3">
+                        <button
+                            type="button"
+                            id="assignedActionsPrev"
+                            class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                            ← Prev
+                        </button>
+                        <span id="assignedActionsPageInfo" class="text-xs text-slate-500">Page 1 of 1</span>
+                        <button
+                            type="button"
+                            id="assignedActionsNext"
+                            class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                            Next →
+                        </button>
+                    </div>
                 </div>
             </div>
 
         </div>
-
+        
+        <?php if(isset($roleActions['update_role_action'])): ?>
         <!-- Save Actions Footer -->
         <div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4">
             <p class="text-xs text-slate-500">
@@ -408,10 +432,13 @@ $assignedActionIds = array_map('intval', array_column($roleActions, 'action_id')
                 Save Permissions
             </button>
         </div>
+        <?php endif; ?>
 
     </div>
+    <?php endif; ?>
 
 
+    <?php if (isset($roleActions['delete_role']) && $isEdit): ?>
     <!-- =========================================================
          DANGER ZONE — edit mode only
          ========================================================= -->
@@ -445,8 +472,9 @@ $assignedActionIds = array_map('intval', array_column($roleActions, 'action_id')
             </form>
         </div>
     </div>
-
     <?php endif; ?>
+
+   
 
 </div>
 
@@ -466,7 +494,30 @@ document.addEventListener('DOMContentLoaded', function () {
     const saveBtn          = document.getElementById('saveActions');
     const roleId           = saveBtn.dataset.roleId;
 
-    // Initial counts
+    // Pagination controls
+    const PAGE_SIZE = 10;
+    const page = { available: 1, assigned: 1 };
+
+    const pager = {
+        available: {
+            tbody: availableTbody,
+            search: availableSearch,
+            prevBtn: document.getElementById('availableActionsPrev'),
+            nextBtn: document.getElementById('availableActionsNext'),
+            info: document.getElementById('availableActionsPageInfo'),
+        },
+        assigned: {
+            tbody: assignedTbody,
+            search: assignedSearch,
+            prevBtn: document.getElementById('assignedActionsPrev'),
+            nextBtn: document.getElementById('assignedActionsNext'),
+            info: document.getElementById('assignedActionsPageInfo'),
+        },
+    };
+
+    // Initial render
+    renderPage('available');
+    renderPage('assigned');
     updateCounts();
     updateEmptyStates();
 
@@ -481,6 +532,10 @@ document.addEventListener('DOMContentLoaded', function () {
         button.textContent = 'Remove';
 
         assignedTbody.appendChild(row);
+        page.available = 1;
+        page.assigned = 1;
+        renderPage('available');
+        renderPage('assigned');
         updateCounts();
         updateEmptyStates();
     }
@@ -496,6 +551,10 @@ document.addEventListener('DOMContentLoaded', function () {
         button.textContent = '+ Add';
 
         availableTbody.appendChild(row);
+        page.available = 1;
+        page.assigned = 1;
+        renderPage('available');
+        renderPage('assigned');
         updateCounts();
         updateEmptyStates();
     }
@@ -511,21 +570,51 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // -------------------------------------------------------
-    // Search filtering
+    // Search + pagination — filters rows, then shows only
+    // the current page's worth (max PAGE_SIZE at a time)
     // -------------------------------------------------------
-    function filterActions(tbody, input) {
-        const term = input.value.trim().toLowerCase();
-        tbody.querySelectorAll('.action-row').forEach(function (row) {
-            const name = (row.dataset.actionName || '').toLowerCase();
-            row.style.display = name.includes(term) ? '' : 'none';
+    function renderPage(key) {
+        const p = pager[key];
+        const term = p.search.value.trim().toLowerCase();
+
+        const allRows = [...p.tbody.querySelectorAll('.action-row')];
+        const matched = allRows.filter(row => (row.dataset.actionName || '').includes(term));
+
+        const totalPages = Math.max(1, Math.ceil(matched.length / PAGE_SIZE));
+        if (page[key] > totalPages) page[key] = totalPages;
+        if (page[key] < 1) page[key] = 1;
+
+        const start = (page[key] - 1) * PAGE_SIZE;
+        const end = start + PAGE_SIZE;
+        const visibleSet = new Set(matched.slice(start, end));
+
+        allRows.forEach(row => {
+            row.style.display = visibleSet.has(row) ? '' : 'none';
         });
+
+        p.info.textContent = `Page ${page[key]} of ${totalPages}`;
+        p.prevBtn.disabled = page[key] <= 1;
+        p.nextBtn.disabled = page[key] >= totalPages;
     }
 
-    availableSearch.addEventListener('input', () => filterActions(availableTbody, availableSearch));
-    assignedSearch.addEventListener('input',  () => filterActions(assignedTbody,  assignedSearch));
+    pager.available.search.addEventListener('input', () => {
+        page.available = 1;
+        renderPage('available');
+    });
+
+    pager.assigned.search.addEventListener('input', () => {
+        page.assigned = 1;
+        renderPage('assigned');
+    });
+
+    pager.available.prevBtn.addEventListener('click', () => { page.available--; renderPage('available'); });
+    pager.available.nextBtn.addEventListener('click', () => { page.available++; renderPage('available'); });
+    pager.assigned.prevBtn.addEventListener('click',  () => { page.assigned--;  renderPage('assigned');  });
+    pager.assigned.nextBtn.addEventListener('click',  () => { page.assigned++;  renderPage('assigned');  });
 
     // -------------------------------------------------------
-    // Counts and empty states
+    // Counts and empty states — based on FILTERED totals,
+    // not just what's visible on the current page
     // -------------------------------------------------------
     function updateCounts() {
         availableCount.textContent = availableTbody.querySelectorAll('.action-row').length;
@@ -568,10 +657,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         saveBtn.classList.replace('hover:bg-green-500', 'hover:bg-blue-500');
                     }, 2500);
                 } else {
-                    alert(data.message || 'Failed to save permissions.');
+                    showToast('error', data.message || 'Failed to save permissions.');
                 }
             })
-            .catch(() => alert('Network error. Please try again.'));
+            .catch(() => showToast('error', 'Network error. Please try again.'));
     });
 });
 </script>

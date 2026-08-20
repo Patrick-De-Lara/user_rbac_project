@@ -666,6 +666,53 @@ $roleActions = array_column($actionChecker->UserModuleChecker('role', $userId),'
 
 </script>
 
+<!-- =============================================================
+     REUSABLE FLASH TOAST COMPONENT
+
+     Available globally as window.showToast(type, message).
+     'type' is 'success' or 'error'. Used for:
+       - Page-load flashes (rendered via the shared
+         Web/Shared/View/flash-toast.php partial)
+       - Client-side-only feedback (AJAX/fetch results) —
+         call showToast() directly from any inline <script>
+         without needing a page reload.
+     ============================================================= -->
+
+<script>
+
+    window.showToast = function (type, message) {
+        const styles = {
+            success: { border: 'border-green-700', bg: 'bg-green-900', text: 'text-green-100', icon: '✓' },
+            error:   { border: 'border-red-700',   bg: 'bg-red-900',   text: 'text-red-100',   icon: '✕' },
+        };
+        const s = styles[type] || styles.success;
+
+        const toast = document.createElement('div');
+        toast.setAttribute('role', 'status');
+        toast.className =
+            'fixed bottom-5 right-5 z-50 flex max-w-sm items-center gap-3 rounded-lg border ' +
+            s.border + ' ' + s.bg + ' px-4 py-3 text-sm ' + s.text + ' shadow-xl transition duration-300';
+
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'text-lg';
+        iconSpan.setAttribute('aria-hidden', 'true');
+        iconSpan.textContent = s.icon;
+
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = message; // textContent — safe from HTML injection
+
+        toast.appendChild(iconSpan);
+        toast.appendChild(messageSpan);
+        document.body.appendChild(toast);
+
+        window.setTimeout(function () {
+            toast.classList.add('translate-y-2', 'opacity-0');
+            window.setTimeout(() => toast.remove(), 300);
+        }, 5000);
+    };
+
+</script>
+
 <?php $this->endBody(); ?>
 
 </body>

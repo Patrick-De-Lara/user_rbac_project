@@ -20,19 +20,7 @@ $formAction = $isUpdate
 
 ?>
 
-    <?php if (isset($flash['error'])): ?>
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-            <strong class="font-bold">Error!</strong>
-            <span class="block sm:inline"><?= htmlspecialchars($flash['error']) ?></span>
-        </div>
-    <?php endif; ?>
-
-    <?php if (isset($flash['success'])): ?>
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-            <strong class="font-bold">Success!</strong>
-            <span class="block sm:inline"><?= htmlspecialchars($flash['success']) ?></span>
-        </div>
-    <?php endif; ?>
+    <?php require __DIR__ . '/../../../Web/Shared/View/flashToast.php'; ?>
 
     <?php
         $value = static fn (string $field): string =>

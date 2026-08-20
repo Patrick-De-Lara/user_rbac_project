@@ -39,18 +39,10 @@ $roleActions = array_flip($roleActions);
         <?php endif; ?>
     </div>
 
-    <!-- Flash Messages -->
-    <?php if (!empty($flash['success'])): ?>
-        <div class="rounded-lg border border-green-700 bg-green-900/30 px-4 py-3 text-sm text-green-300">
-            <?= Html::encode($flash['success']) ?>
-        </div>
-    <?php endif; ?>
-
-    <?php if (!empty($flash['error'])): ?>
-        <div class="rounded-lg border border-red-700 bg-red-900/30 px-4 py-3 text-sm text-red-300">
-            <?= Html::encode($flash['error']) ?>
-        </div>
-    <?php endif; ?>
+    <!-- =========================================================
+         FLASH MESSAGES
+         ========================================================= -->
+    <?php require __DIR__ . '/../../../Web/Shared/View/flashToast.php'; ?>
 
 
     <!-- =========================================================
@@ -71,7 +63,9 @@ $roleActions = array_flip($roleActions);
                         <th class="px-6 py-3">Code</th>
                         <th class="px-6 py-3">Description</th>
                         <th class="px-6 py-3">Status</th>
+                        <?php if (isset($roleActions['update_role']) || isset($roleActions['delete_role'])): ?>
                         <th class="px-6 py-3 text-right">Actions</th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 bg-white">
@@ -99,6 +93,7 @@ $roleActions = array_flip($roleActions);
                                     <span class="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">Inactive</span>
                                 <?php endif; ?>
                             </td>
+                            <?php if (isset($roleActions['update_role']) || isset($roleActions['delete_role'])): ?>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     <a
@@ -124,6 +119,7 @@ $roleActions = array_flip($roleActions);
                                     </form>
                                 </div>
                             </td>
+                            <?php endif; ?>
                         </tr>
                     <?php endforeach; ?>
 
@@ -258,6 +254,23 @@ $roleActions = array_flip($roleActions);
                 <div id="availableEmpty" class="hidden px-6 py-10 text-center text-sm text-slate-500">
                     No available roles.
                 </div>
+                <div class="flex items-center justify-between border-t border-slate-700 px-6 py-3">
+                    <button
+                        type="button"
+                        id="availableRolesPrev"
+                        class="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                        ← Prev
+                    </button>
+                    <span id="availableRolesPageInfo" class="text-xs text-slate-500">Page 1 of 1</span>
+                    <button
+                        type="button"
+                        id="availableRolesNext"
+                        class="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                        Next →
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -296,6 +309,23 @@ $roleActions = array_flip($roleActions);
                 </table>
                 <div id="assignedEmpty" class="hidden px-6 py-10 text-center text-sm text-slate-500">
                     No roles assigned.
+                </div>
+                <div class="flex items-center justify-between border-t border-slate-700 px-6 py-3">
+                    <button
+                        type="button"
+                        id="assignedRolesPrev"
+                        class="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                        ← Prev
+                    </button>
+                    <span id="assignedRolesPageInfo" class="text-xs text-slate-500">Page 1 of 1</span>
+                    <button
+                        type="button"
+                        id="assignedRolesNext"
+                        class="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                        Next →
+                    </button>
                 </div>
             </div>
         </div>
@@ -343,12 +373,21 @@ document.addEventListener('DOMContentLoaded', function () {
         assignedSearch:     document.getElementById('assignedRoleSearch'),
         availableEmpty:     document.getElementById('availableEmpty'),
         assignedEmpty:      document.getElementById('assignedEmpty'),
+        availablePrev:      document.getElementById('availableRolesPrev'),
+        availableNext:      document.getElementById('availableRolesNext'),
+        availablePageInfo:  document.getElementById('availableRolesPageInfo'),
+        assignedPrev:       document.getElementById('assignedRolesPrev'),
+        assignedNext:       document.getElementById('assignedRolesNext'),
+        assignedPageInfo:   document.getElementById('assignedRolesPageInfo'),
     };
 
     // =============================================================
     // 3. STATE
     // =============================================================
     let selectedUserId = null;
+
+    const PAGE_SIZE = 10;
+    const page = { available: 1, assigned: 1 };
 
     // =============================================================
     // 4. HELPERS
@@ -390,7 +429,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 dom.saveArea.classList.remove('hidden');
             })
             .catch(() => {
-                alert('Failed to load roles. Please try again.');
+                showToast('error', 'Failed to load roles. Please try again.');
             });
     }
 
@@ -398,14 +437,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const username = dom.userSearchInput.value.trim();
 
         if (username === '') {
-            alert('Please select a user first.');
+            showToast('error', 'Please select a user first.');
             return;
         }
 
         const user = findUserByUsername(username);
 
         if (!user) {
-            alert('User not found. Please select from the list.');
+            showToast('error', 'User not found. Please select from the list.');
             return;
         }
 
@@ -429,6 +468,10 @@ document.addEventListener('DOMContentLoaded', function () {
             (isAssigned ? dom.assignedRolesTbody : dom.availableRolesTbody).appendChild(row);
         });
 
+        page.available = 1;
+        page.assigned = 1;
+        renderPage('available');
+        renderPage('assigned');
         updateCounts();
         updateEmptyStates();
     }
@@ -479,6 +522,10 @@ document.addEventListener('DOMContentLoaded', function () {
         button.textContent = 'Remove';
 
         dom.assignedRolesTbody.appendChild(row);
+        page.available = 1;
+        page.assigned = 1;
+        renderPage('available');
+        renderPage('assigned');
         updateCounts();
         updateEmptyStates();
     }
@@ -491,6 +538,10 @@ document.addEventListener('DOMContentLoaded', function () {
         button.textContent = '+ Add';
 
         dom.availableRolesTbody.appendChild(row);
+        page.available = 1;
+        page.assigned = 1;
+        renderPage('available');
+        renderPage('assigned');
         updateCounts();
         updateEmptyStates();
     }
@@ -510,7 +561,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function saveRoleAssignments() {
         if (!selectedUserId) {
-            alert('No user selected.');
+            showToast('error', 'No user selected.');
             return;
         }
 
@@ -527,29 +578,72 @@ document.addEventListener('DOMContentLoaded', function () {
         })
             .then(r => r.json())
             .then(data => {
-                alert(data.message || (data.success ? 'Roles saved successfully.' : 'Failed to save roles.'));
+                showToast(
+                    data.success ? 'success' : 'error',
+                    data.message || (data.success ? 'Roles saved successfully.' : 'Failed to save roles.')
+                );
             })
             .catch(() => {
-                alert('Network error. Please try again.');
+                showToast('error', 'Network error. Please try again.');
             });
     }
 
     dom.saveBtn.addEventListener('click', saveRoleAssignments);
 
     // =============================================================
-    // 9. SEARCH / FILTER
+    // 9. SEARCH + PAGINATION
+    // Filters rows by search term, then shows only the current
+    // page's worth (max PAGE_SIZE rows at a time).
     // =============================================================
 
-    function filterRoles(tbody, searchInput) {
-        const term = searchInput.value.trim().toLowerCase();
-        tbody.querySelectorAll('.role-row').forEach(function (row) {
-            const name = (row.dataset.roleName || '').toLowerCase();
-            row.style.display = name.includes(term) ? '' : 'none';
+    const pager = {
+        available: {
+            tbody: dom.availableRolesTbody,
+            search: dom.availableSearch,
+            prevBtn: dom.availablePrev,
+            nextBtn: dom.availableNext,
+            info: dom.availablePageInfo,
+        },
+        assigned: {
+            tbody: dom.assignedRolesTbody,
+            search: dom.assignedSearch,
+            prevBtn: dom.assignedPrev,
+            nextBtn: dom.assignedNext,
+            info: dom.assignedPageInfo,
+        },
+    };
+
+    function renderPage(key) {
+        const p = pager[key];
+        const term = p.search.value.trim().toLowerCase();
+
+        const allRows = [...p.tbody.querySelectorAll('.role-row')];
+        const matched = allRows.filter(row => (row.dataset.roleName || '').includes(term));
+
+        const totalPages = Math.max(1, Math.ceil(matched.length / PAGE_SIZE));
+        if (page[key] > totalPages) page[key] = totalPages;
+        if (page[key] < 1) page[key] = 1;
+
+        const start = (page[key] - 1) * PAGE_SIZE;
+        const end = start + PAGE_SIZE;
+        const visibleSet = new Set(matched.slice(start, end));
+
+        allRows.forEach(row => {
+            row.style.display = visibleSet.has(row) ? '' : 'none';
         });
+
+        p.info.textContent = `Page ${page[key]} of ${totalPages}`;
+        p.prevBtn.disabled = page[key] <= 1;
+        p.nextBtn.disabled = page[key] >= totalPages;
     }
 
-    dom.availableSearch.addEventListener('input', () => filterRoles(dom.availableRolesTbody, dom.availableSearch));
-    dom.assignedSearch.addEventListener('input',  () => filterRoles(dom.assignedRolesTbody,  dom.assignedSearch));
+    dom.availableSearch.addEventListener('input', () => { page.available = 1; renderPage('available'); });
+    dom.assignedSearch.addEventListener('input',  () => { page.assigned = 1;  renderPage('assigned');  });
+
+    dom.availablePrev.addEventListener('click', () => { page.available--; renderPage('available'); });
+    dom.availableNext.addEventListener('click', () => { page.available++; renderPage('available'); });
+    dom.assignedPrev.addEventListener('click',  () => { page.assigned--;  renderPage('assigned');  });
+    dom.assignedNext.addEventListener('click',  () => { page.assigned++;  renderPage('assigned');  });
 
     // =============================================================
     // 10. COUNTS / EMPTY STATES
